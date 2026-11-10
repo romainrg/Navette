@@ -42,6 +42,29 @@ struct BrowserView: View {
         } message: {
             Text(model.notice?.message ?? "")
         }
+        .alert("“\(model.editor.remoteChange?.path.name ?? "")” changed on the server", isPresented: remoteChangeBinding) {
+            Button("Replace with My Version", role: .destructive) { model.editor.resolveRemoteChange(overwrite: true) }
+            Button("Keep the Server's Version", role: .cancel) { model.editor.resolveRemoteChange(overwrite: false) }
+        } message: {
+            Text("Someone or something modified this file since you opened it. Replacing it cannot be undone. Your changes stay in the editor either way.")
+        }
+        .alert("Preview this large file?", isPresented: largePreviewBinding) {
+            Button("Download and Preview") {
+                if let item = model.editor.largePreview?.item { model.editor.quickLook(item, confirmed: true) }
+                model.editor.largePreview = nil
+            }
+            Button("Cancel", role: .cancel) { model.editor.largePreview = nil }
+        } message: {
+            Text("“\(model.editor.largePreview?.item.name ?? "")” is \(Format.bytes(model.editor.largePreview?.item.size ?? 0)). It has to be downloaded first.")
+        }
+    }
+
+    private var remoteChangeBinding: Binding<Bool> {
+        Binding(get: { model.editor.remoteChange != nil }, set: { if !$0 { model.editor.resolveRemoteChange(overwrite: false) } })
+    }
+
+    private var largePreviewBinding: Binding<Bool> {
+        Binding(get: { model.editor.largePreview != nil }, set: { if !$0 { model.editor.largePreview = nil } })
     }
 
     private var table: some View {
@@ -166,6 +189,10 @@ private struct StatusBar: View {
         HStack(spacing: 8) {
             if model.isLoading { ProgressView().controlSize(.small) }
             Text(summary).font(.caption).foregroundStyle(.secondary).monospacedDigit()
+            if let status = model.editor.status {
+                Text(verbatim: "·").font(.caption).foregroundStyle(.tertiary)
+                Text(status).font(.caption).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
+            }
             Spacer()
             if !model.bookmark.protocol.isEncrypted {
                 Label("Not encrypted", systemImage: "lock.open.fill").font(.caption).foregroundStyle(.orange)

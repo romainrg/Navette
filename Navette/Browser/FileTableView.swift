@@ -201,6 +201,9 @@ struct FileTableView: NSViewRepresentable {
             case 36 where !command: // Return
                 if let item = model.singleSelection { model.textPrompt = .rename(item) }
                 return true
+            case 49 where !command: // Space
+                if let item = model.singleSelection { model.editor.quickLook(item) }
+                return true
             case 125 where command: // ⌘↓
                 if let item = model.singleSelection { model.open(item) }
                 return true
@@ -230,6 +233,30 @@ struct FileTableView: NSViewRepresentable {
             menu.autoenablesItems = false
             if let single = model.singleSelection {
                 add(String(localized: "Open")) { [model] in model.open(single) }
+                if single.kind != .directory {
+                    add(String(localized: "Quick Look")) { [model] in model.editor.quickLook(single) }
+                    let openWith = NSMenuItem(title: String(localized: "Open With"), action: nil, keyEquivalent: "")
+                    let submenu = NSMenu()
+                    submenu.autoenablesItems = false
+                    for application in model.editor.applications(for: single) {
+                        let name = FileManager.default.displayName(atPath: application.path)
+                        let entry = ClosureMenuItem(title: name) { [model] in model.editor.open(single, with: application) }
+                        let icon = NSWorkspace.shared.icon(forFile: application.path)
+                        icon.size = NSSize(width: 16, height: 16)
+                        entry.image = icon
+                        submenu.addItem(entry)
+                    }
+                    if !submenu.items.isEmpty { submenu.addItem(.separator()) }
+                    submenu.addItem(ClosureMenuItem(title: String(localized: "Other…")) { [model] in
+                        let panel = NSOpenPanel()
+                        panel.directoryURL = URL(fileURLWithPath: "/Applications")
+                        panel.allowedContentTypes = [.application]
+                        panel.prompt = String(localized: "Open")
+                        if panel.runModal() == .OK, let application = panel.url { model.editor.open(single, with: application) }
+                    })
+                    openWith.submenu = submenu
+                    menu.addItem(openWith)
+                }
             }
             if !selected.isEmpty {
                 add(String(localized: "Download")) { [model] in model.download(selected) }

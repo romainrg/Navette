@@ -76,6 +76,14 @@ final class BrowserModel: Identifiable {
     @ObservationIgnored private var loadGeneration = 0
     @ObservationIgnored private var reloadTask: Task<Void, Never>?
     @ObservationIgnored var onConnected: ((Bookmark) -> Void)?
+    /// Quick Look and "Open With" for this tab.
+    @ObservationIgnored lazy var editor = EditCoordinator(
+        env: env, tab: id,
+        connection: { [weak self] in
+            guard let self else { throw RemoteError.cancelled }
+            return try self.connection()
+        },
+        report: { [weak self] title, message in self?.notice = Notice(title: title, message: message) })
 
     init(bookmark: Bookmark, env: AppEnvironment, prompts: PromptCenter, transfers: TransfersModel, settings: AppSettings) {
         self.bookmark = bookmark
@@ -127,6 +135,7 @@ final class BrowserModel: Identifiable {
 
     func disconnect() {
         reloadTask?.cancel()
+        editor.closeAll()
         let connections = [fs, transferFS].compactMap { $0 }
         fs = nil
         transferFS = nil
