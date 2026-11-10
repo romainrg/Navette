@@ -91,8 +91,68 @@ EOF
   export NAVETTE_IT_WEBDAV_URL="http://127.0.0.1:$port" NAVETTE_IT_WEBDAV_USER=navette NAVETTE_IT_WEBDAV_PASSWORD="integration password"
 }
 
+# FTP needs a server macOS does not ship: vsftpd from Homebrew (plain FTP only, it is built without TLS).
+# Point NAVETTE_IT_VSFTPD_TLS at a TLS-enabled vsftpd build to run the FTPS tests as well.
+start_ftp() {
+  local binary="$1" name="$2" port="$3" reuse="$4" tls="$5" dir="$DIR/$2"
+  mkdir -p "$dir/root" "$dir/empty"
+  cat > "$dir/vsftpd.conf" <<EOF
+listen=YES
+listen_port=$port
+listen_address=127.0.0.1
+background=NO
+run_as_launching_user=YES
+anonymous_enable=YES
+anon_root=$dir/root
+no_anon_password=YES
+write_enable=YES
+anon_upload_enable=YES
+anon_mkdir_write_enable=YES
+anon_other_write_enable=YES
+anon_umask=022
+local_enable=NO
+seccomp_sandbox=NO
+secure_chroot_dir=$dir/empty
+pasv_min_port=$((port + 1))
+pasv_max_port=$((port + 60))
+xferlog_enable=NO
+EOF
+  if [[ "$tls" == yes ]]; then
+    openssl req -x509 -newkey rsa:2048 -nodes -keyout "$dir/key.pem" -out "$dir/cert.pem" -days 2 -subj "/CN=localhost" 2>/dev/null
+    cat >> "$dir/vsftpd.conf" <<EOF
+ssl_enable=YES
+allow_anon_ssl=YES
+force_anon_logins_ssl=YES
+force_anon_data_ssl=YES
+rsa_cert_file=$dir/cert.pem
+rsa_private_key_file=$dir/key.pem
+require_ssl_reuse=$reuse
+ssl_ciphers=HIGH
+EOF
+  fi
+  "$binary" "$dir/vsftpd.conf" 0<>"$dir/vsftpd.err" > /dev/null 2>&1 &
+  PIDS+=("$!")
+  wait_for_port "$port"
+}
+
 start_sftp
 start_webdav
+
+VSFTPD="$(command -v vsftpd || true)"
+[[ -z "$VSFTPD" && -x /opt/homebrew/sbin/vsftpd ]] && VSFTPD=/opt/homebrew/sbin/vsftpd
+if [[ -n "$VSFTPD" ]]; then
+  start_ftp "$VSFTPD" ftp 22100 NO no
+  export NAVETTE_IT_FTP_PORT=22100 NAVETTE_IT_FTP_ROOT="$DIR/ftp/root"
+else
+  echo "integration: vsftpd not found, FTP tests are skipped (brew install vsftpd)" >&2
+fi
+if [[ -n "${NAVETTE_IT_VSFTPD_TLS:-}" && -x "$NAVETTE_IT_VSFTPD_TLS" ]]; then
+  start_ftp "$NAVETTE_IT_VSFTPD_TLS" ftps 22200 NO yes
+  start_ftp "$NAVETTE_IT_VSFTPD_TLS" ftps-reuse 22300 YES yes
+  export NAVETTE_IT_FTPS_PORT=22200 NAVETTE_IT_FTPS_REUSE_PORT=22300
+  export NAVETTE_IT_FTPS_CERT_SHA256="$(openssl x509 -in "$DIR/ftps/cert.pem" -outform der | shasum -a 256 | cut -d' ' -f1)"
+  export NAVETTE_IT_FTPS_CERT_SHA256_REUSE="$(openssl x509 -in "$DIR/ftps-reuse/cert.pem" -outform der | shasum -a 256 | cut -d' ' -f1)"
+fi
 
 # The askpass helper is built with the app (make build). Its end-to-end test is skipped without it.
 HELPER="$PWD/build/Build/Products/Debug/navette-askpass"
