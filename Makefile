@@ -5,7 +5,7 @@ endif
 APP := build/Build/Products/Debug/Navette.app
 XCB := xcodebuild -project Navette.xcodeproj -scheme Navette -destination 'platform=macOS' -derivedDataPath build
 
-.PHONY: generate build test core-test check-strings run demo release clean
+.PHONY: generate build test core-test integration check-strings run demo release clean
 
 generate:
 	xcodegen generate
@@ -19,6 +19,9 @@ test: generate
 
 core-test:
 	swift test --package-path NavetteCore $(if $(FILTER),--filter $(FILTER))
+
+integration:
+	scripts/integration.sh $(FILTER)
 
 check-strings:
 	scripts/check-strings.sh

@@ -21,6 +21,14 @@ extension XCTestCase {
         addTeardownBlock { try? FileManager.default.removeItem(at: url) }
         return url
     }
+
+    /// Unix socket paths are limited to 104 bytes: sockets need a folder with a short path.
+    func shortTemporaryDirectory() throws -> URL {
+        let url = URL(fileURLWithPath: "/tmp/nvt-\(UInt32.random(in: 0...UInt32.max))", isDirectory: true)
+        try FileManager.default.createDirectory(at: url, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
+        addTeardownBlock { try? FileManager.default.removeItem(at: url) }
+        return url
+    }
 }
 
 func readAll(_ fs: any RemoteFileSystem, _ path: RemotePath, offset: UInt64 = 0) async throws -> Data {
