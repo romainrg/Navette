@@ -33,6 +33,9 @@ struct NavetteCommands: Commands {
             Button("Delete…") { tab?.requestDeletion() }
                 .keyboardShortcut(.delete)
                 .disabled(tab?.selection.isEmpty != false)
+            Button("Quick Look") { if let tab, let item = tab.singleSelection { tab.editor.quickLook(item) } }
+                .keyboardShortcut("y")
+                .disabled(tab?.singleSelection == nil)
             Button("Get Info") { tab?.inspectorVisible.toggle() }
                 .keyboardShortcut("i")
                 .disabled(tab == nil)

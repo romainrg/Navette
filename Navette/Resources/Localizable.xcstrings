@@ -731,6 +731,16 @@
         }
       }
     },
+    "Demo mode never writes to the disk, so it cannot preview or edit files." : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le mode démo n'écrit jamais sur le disque : il ne peut donc ni prévisualiser ni modifier des fichiers."
+          }
+        }
+      }
+    },
     "Document" : {
       "localizations" : {
         "fr" : {
@@ -771,6 +781,16 @@
         }
       }
     },
+    "Download and Preview" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Télécharger et prévisualiser"
+          }
+        }
+      }
+    },
     "Download folder" : {
       "localizations" : {
         "fr" : {
@@ -787,6 +807,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Télécharger vers…"
+          }
+        }
+      }
+    },
+    "Downloading “%@” for the preview…" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Téléchargement de « %@ » pour l’aperçu…"
+          }
+        }
+      }
+    },
+    "Downloading “%@” to edit it…" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Téléchargement de « %@ » pour le modifier…"
           }
         }
       }
@@ -837,6 +877,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Modifier le favori"
+          }
+        }
+      }
+    },
+    "Editing “%@”: each save is sent to the server." : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modification de « %@ » : chaque enregistrement est envoyé au serveur."
           }
         }
       }
@@ -1091,6 +1141,16 @@
         }
       }
     },
+    "Keep the Server's Version" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Garder la version du serveur"
+          }
+        }
+      }
+    },
     "Key type" : {
       "localizations" : {
         "fr" : {
@@ -1291,6 +1351,16 @@
         }
       }
     },
+    "Not available in demo mode" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Indisponible en mode démo"
+          }
+        }
+      }
+    },
     "Not encrypted" : {
       "localizations" : {
         "fr" : {
@@ -1361,6 +1431,16 @@
         }
       }
     },
+    "Open With" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ouvrir avec"
+          }
+        }
+      }
+    },
     "Optional" : {
       "localizations" : {
         "fr" : {
@@ -1377,6 +1457,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Autres"
+          }
+        }
+      }
+    },
+    "Other…" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Autre…"
           }
         }
       }
@@ -1551,6 +1641,16 @@
         }
       }
     },
+    "Preview this large file?" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prévisualiser ce gros fichier ?"
+          }
+        }
+      }
+    },
     "Protocol" : {
       "localizations" : {
         "fr" : {
@@ -1567,6 +1667,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Connexion rapide"
+          }
+        }
+      }
+    },
+    "Quick Look" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Coup d’œil"
           }
         }
       }
@@ -1687,6 +1797,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Renommer…"
+          }
+        }
+      }
+    },
+    "Replace with My Version" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remplacer par ma version"
           }
         }
       }
@@ -1891,6 +2011,16 @@
         }
       }
     },
+    "Someone or something modified this file since you opened it. Replacing it cannot be undone. Your changes stay in the editor either way." : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ce fichier a été modifié depuis que vous l'avez ouvert. Le remplacer est irréversible. Dans les deux cas, vos modifications restent dans l'éditeur."
+          }
+        }
+      }
+    },
     "Special file" : {
       "localizations" : {
         "fr" : {
@@ -2031,6 +2161,16 @@
         }
       }
     },
+    "The file could not be opened." : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le fichier n'a pas pu être ouvert."
+          }
+        }
+      }
+    },
     "The folder could not be created." : {
       "localizations" : {
         "fr" : {
@@ -2087,6 +2227,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Les permissions n'ont pas pu être modifiées."
+          }
+        }
+      }
+    },
+    "The preview could not be shown." : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'aperçu n'a pas pu être affiché."
           }
         }
       }
@@ -2301,6 +2451,16 @@
         }
       }
     },
+    "Uploaded “%@” at %@" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "« %1$@ » envoyé à %2$@"
+          }
+        }
+      }
+    },
     "Upload…" : {
       "localizations" : {
         "fr" : {
@@ -2411,12 +2571,42 @@
         }
       }
     },
+    "“%@” changed on the server" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "« %@ » a changé sur le serveur"
+          }
+        }
+      }
+    },
+    "“%@” could not be sent back. Your changes are still in the editor." : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "« %@ » n'a pas pu être renvoyé. Vos modifications sont toujours dans l'éditeur."
+          }
+        }
+      }
+    },
     "“%@” does not exist." : {
       "localizations" : {
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "« %@ » n'existe pas."
+          }
+        }
+      }
+    },
+    "“%@” is %@. It has to be downloaded first." : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "« %1$@ » pèse %2$@. Il doit d'abord être téléchargé."
           }
         }
       }
