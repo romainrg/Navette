@@ -31,7 +31,8 @@ start_sftp() {
   mkdir -p "$dir/root"
   ssh-keygen -q -t ed25519 -f "$dir/host_key" -N ''
   ssh-keygen -q -t ed25519 -f "$dir/client_key" -N ''
-  cp "$dir/client_key.pub" "$dir/authorized_keys"
+  ssh-keygen -q -t ed25519 -f "$dir/locked_key" -N 'integration passphrase'
+  cat "$dir/client_key.pub" "$dir/locked_key.pub" > "$dir/authorized_keys"
   chmod 600 "$dir/authorized_keys"
   cat > "$dir/sshd_config" <<EOF
 Port $port
@@ -54,5 +55,9 @@ EOF
 }
 
 start_sftp
+
+# The askpass helper is built with the app (make build). Its end-to-end test is skipped without it.
+HELPER="$PWD/build/Build/Products/Debug/navette-askpass"
+if [[ -x "$HELPER" ]]; then export NAVETTE_IT_ASKPASS_HELPER="$HELPER"; fi
 
 swift test --package-path NavetteCore --filter "${1:-IntegrationTests}"
