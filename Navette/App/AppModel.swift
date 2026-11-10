@@ -43,6 +43,11 @@ final class AppModel {
         self.transfers.onFinished = { [weak self] item in
             self?.tabs.forEach { $0.transferFinished(item) }
         }
+        self.prompts.onCertificateTrusted = { [weak self] bookmark, sha256 in
+            guard let self, var saved = self.library.bookmark(bookmark.id) else { return }
+            saved.trustedCertificateSHA256 = sha256
+            self.save { $0.update(saved) }
+        }
         applyTransferSettings()
     }
 

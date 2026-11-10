@@ -891,6 +891,16 @@
         }
       }
     },
+    "Expires" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Expire le"
+          }
+        }
+      }
+    },
     "Filter" : {
       "localizations" : {
         "fr" : {
@@ -1047,6 +1057,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Interrompu : %@"
+          }
+        }
+      }
+    },
+    "Issued by" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Délivré par"
+          }
+        }
+      }
+    },
+    "Issued to" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Délivré à"
           }
         }
       }
@@ -1551,6 +1581,16 @@
         }
       }
     },
+    "Reason" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Motif"
+          }
+        }
+      }
+    },
     "Recent" : {
       "localizations" : {
         "fr" : {
@@ -1697,6 +1737,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "SFTP utilise votre configuration SSH, vos clés et votre agent."
+          }
+        }
+      }
+    },
+    "SHA-256" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SHA-256"
           }
         }
       }
@@ -1927,6 +1977,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Le certificat du serveur n'est pas approuvé : %@"
+          }
+        }
+      }
+    },
+    "The certificate of “%@” is not trusted" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le certificat de « %@ » n'est pas approuvé"
+          }
+        }
+      }
+    },
+    "The connection is encrypted, but this Mac cannot verify who is at the other end. Trust this certificate only if you know where it comes from; Navette will then accept exactly this one for this server." : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La connexion est chiffrée, mais ce Mac ne peut pas vérifier qui se trouve à l'autre bout. N'approuvez ce certificat que si vous savez d'où il vient ; Navette acceptera alors exactement celui-ci pour ce serveur."
           }
         }
       }
@@ -2187,6 +2257,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Faire confiance"
+          }
+        }
+      }
+    },
+    "Trust This Certificate" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Approuver ce certificat"
           }
         }
       }

@@ -19,12 +19,16 @@ final class PromptCenter {
         let prompt: AskpassPrompt
         /// The previous answer was refused.
         let isRetry: Bool
+        /// Set when the question is whether to trust a TLS certificate the system does not trust.
+        var certificate: CertificateSummary?
     }
 
     private(set) var current: Request?
     /// Messages that need no answer, such as "touch your security key".
     private(set) var notices: [UUID: String] = [:]
 
+    /// Called when the user trusts a certificate, so the choice is remembered with the bookmark.
+    @ObservationIgnored var onCertificateTrusted: ((Bookmark, String) -> Void)?
     @ObservationIgnored private var continuation: CheckedContinuation<PromptAnswer?, Never>?
     @ObservationIgnored private var waiting: [(Request, CheckedContinuation<PromptAnswer?, Never>)] = []
 
@@ -33,9 +37,9 @@ final class PromptCenter {
     }
 
     /// Returns `nil` when the user cancels.
-    func ask(server: String, prompt: AskpassPrompt, isRetry: Bool = false) async -> PromptAnswer? {
+    func ask(server: String, prompt: AskpassPrompt, isRetry: Bool = false, certificate: CertificateSummary? = nil) async -> PromptAnswer? {
         await withCheckedContinuation { continuation in
-            let request = Request(server: server, prompt: prompt, isRetry: isRetry)
+            let request = Request(server: server, prompt: prompt, isRetry: isRetry, certificate: certificate)
             if current == nil {
                 current = request
                 self.continuation = continuation
@@ -53,6 +57,14 @@ final class PromptCenter {
         } else {
             (current, continuation) = waiting.removeFirst()
         }
+    }
+
+    /// Shows the certificate and asks whether to trust it. A certificate error is never bypassed without this.
+    func askToTrust(_ certificate: CertificateSummary, for bookmark: Bookmark) async -> Bool {
+        let answer = await ask(server: bookmark.displayName, prompt: .confirm(message: certificate.reason), certificate: certificate)
+        guard answer?.accepted == true else { return false }
+        onCertificateTrusted?(bookmark, certificate.sha256)
+        return true
     }
 
     func showNotice(_ message: String, id: UUID) { notices[id] = message }

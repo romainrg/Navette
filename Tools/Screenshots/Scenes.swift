@@ -65,6 +65,13 @@ enum ScreenshotScenes {
             prompt("prompt-password", .password(account: "deploy@staging.example.org"), retry: true, height: 280),
             prompt("prompt-passphrase", .passphrase(keyPath: "/Users/demo/.ssh/id_ed25519"), height: 250),
             prompt("prompt-code", .oneTimeCode(message: "(deploy@staging.example.org) Verification code:"), height: 220),
+            ScreenshotScene(name: "prompt-certificate", size: CGSize(width: 460, height: 400)) {
+                let certificate = CertificateSummary(
+                    subject: "ftp.example.net", issuer: "ftp.example.net", notAfter: DemoData.now.addingTimeInterval(200 * 86_400),
+                    sha256: "d3ffe41d953cd2f85a6287b7e466a7811cfa8c9cbf21b2035afcc2c203c545f7", reason: "The certificate is self-signed.")
+                let request = PromptCenter.Request(server: "Archive", prompt: .confirm(message: ""), isRetry: false, certificate: certificate)
+                return AnyView(PromptSheet(request: request) { _ in })
+            },
             ScreenshotScene(name: "conflict", size: CGSize(width: 540, height: 330)) {
                 AnyView(ConflictSheet(conflict: DemoData.conflict) { _ in })
             },

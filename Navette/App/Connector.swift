@@ -16,6 +16,9 @@ final class LiveConnector: ServerConnecting, @unchecked Sendable {
     private var askpass: AskpassServer?
     /// Servers whose `ssh` connection is shared through a control socket: more channels cost no new login.
     private var shared: Set<String> = []
+    /// What this session already knows about a server, so a second connection does not ask again. Never written to disk.
+    private var sessionSecrets: [String: String] = [:]
+    private var sessionTrust: [String: String] = [:]
 
     init(credentials: any CredentialStore) {
         self.credentials = credentials
@@ -25,14 +28,87 @@ final class LiveConnector: ServerConnecting, @unchecked Sendable {
         switch bookmark.protocol {
         case .sftp:
             return try await connectSFTP(bookmark, password: password, prompts: prompts)
-        case .ftp, .ftps, .webdav, .webdavs:
-            throw RemoteError.unsupported(bookmark.protocol.displayName)
+        case .ftp, .ftps:
+            return try await connectWithPassword(bookmark, password: password, prompts: prompts) { secret, trusted in
+                try await FTPFileSystem.connect(Self.ftpConnection(bookmark, password: secret, trusted: trusted))
+            }
+        case .webdav, .webdavs:
+            return try await connectWithPassword(bookmark, password: password, prompts: prompts) { secret, trusted in
+                guard let url = URL(string: "\(bookmark.protocol.scheme)://\(bookmark.host.contains(":") ? "[\(bookmark.host)]" : bookmark.host):\(bookmark.effectivePort)") else {
+                    throw RemoteError.server("Invalid host name")
+                }
+                let fs = WebDAVFileSystem(connection: WebDAVConnection(baseURL: url, user: bookmark.user, password: secret, trustedCertificateSHA256: trusted))
+                // The first request is where a wrong password or an untrusted certificate shows up.
+                do {
+                    _ = try await fs.stat(RemotePath(bookmark.path ?? "/"))
+                } catch let error as RemoteError {
+                    switch error {
+                    case .authenticationFailed, .untrustedCertificate, .unreachable, .connectionLost:
+                        await fs.disconnect()
+                        throw error
+                    default: break
+                    }
+                }
+                return fs
+            }
         }
     }
 
     func transferConnection(for bookmark: Bookmark, primary: any RemoteFileSystem, prompts: PromptCenter) async -> any RemoteFileSystem {
-        guard bookmark.protocol == .sftp, lock.withLock({ shared.contains(bookmark.credentialKey) }) else { return primary }
-        return (try? await connectSFTP(bookmark, password: nil, prompts: prompts)) ?? primary
+        switch bookmark.protocol {
+        case .sftp:
+            guard lock.withLock({ shared.contains(bookmark.credentialKey) }) else { return primary }
+            return (try? await connectSFTP(bookmark, password: nil, prompts: prompts)) ?? primary
+        case .ftp, .ftps:
+            // FTP does one thing at a time per connection: a second login keeps browsing responsive during transfers.
+            let (secret, trusted) = lock.withLock { (sessionSecrets[bookmark.credentialKey], sessionTrust[bookmark.credentialKey]) }
+            return (try? await FTPFileSystem.connect(Self.ftpConnection(bookmark, password: secret, trusted: trusted ?? bookmark.trustedCertificateSHA256))) ?? primary
+        case .webdav, .webdavs:
+            return primary
+        }
+    }
+
+    private static func ftpConnection(_ bookmark: Bookmark, password: String?, trusted: String?) -> FTPConnection {
+        let anonymous = bookmark.user?.isEmpty != false
+        let security: FTPConnection.Security = bookmark.protocol == .ftp ? .none : (bookmark.effectivePort == 990 ? .implicitTLS : .explicitTLS)
+        return FTPConnection(
+            host: bookmark.host, port: bookmark.effectivePort, user: anonymous ? "anonymous" : bookmark.user!,
+            password: password ?? (anonymous ? "anonymous@" : ""), security: security, trustedCertificateSHA256: trusted)
+    }
+
+    /// Password protocols: tries what is known, then asks. A password is saved only once it has worked,
+    /// and a certificate the system does not trust is shown before anything is sent.
+    private func connectWithPassword(
+        _ bookmark: Bookmark, password: String?, prompts: PromptCenter,
+        open: (_ password: String?, _ trustedCertificate: String?) async throws -> any RemoteFileSystem
+    ) async throws -> any RemoteFileSystem {
+        var secret = password ?? credentials.secret(for: bookmark.credentialKey)
+        var trusted = bookmark.trustedCertificateSHA256 ?? lock.withLock { sessionTrust[bookmark.credentialKey] }
+        var toSave: String?
+        var asked = false
+        for _ in 0..<5 {
+            do {
+                let fs = try await open(secret, trusted)
+                if let toSave { try? credentials.setSecret(toSave, for: bookmark.credentialKey) }
+                lock.withLock {
+                    sessionSecrets[bookmark.credentialKey] = secret
+                    sessionTrust[bookmark.credentialKey] = trusted
+                }
+                return fs
+            } catch RemoteError.authenticationFailed {
+                let account = "\(bookmark.user ?? "anonymous")@\(bookmark.host)"
+                guard let answer = await prompts.ask(server: bookmark.displayName, prompt: .password(account: account), isRetry: asked) else {
+                    throw RemoteError.cancelled
+                }
+                asked = true
+                secret = answer.text
+                toSave = answer.remember ? answer.text : nil
+            } catch RemoteError.untrustedCertificate(let certificate) {
+                guard await prompts.askToTrust(certificate, for: bookmark) else { throw RemoteError.cancelled }
+                trusted = certificate.sha256
+            }
+        }
+        throw RemoteError.authenticationFailed("")
     }
 
     func resolveSSH(_ bookmark: Bookmark) async -> ResolvedSSHConfig? {
