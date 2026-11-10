@@ -84,7 +84,9 @@ public final class SFTPFileSystem: RemoteFileSystem, @unchecked Sendable {
                     let name = try names.string()
                     let longName = try names.string()
                     let attributes = try SFTPAttributes(from: &names)
-                    if name == [UInt8(ascii: ".")] || name == [UInt8(ascii: "."), UInt8(ascii: ".")] { continue }
+                    // "." and "..", and names no file system can hold: a hostile server must not be able to aim elsewhere.
+                    if name.isEmpty || name == [UInt8(ascii: ".")] || name == [UInt8(ascii: "."), UInt8(ascii: ".")]
+                        || name.contains(UInt8(ascii: "/")) || name.contains(0) { continue }
                     items.append(attributes.item(path: path.appending(name), longName: longName))
                 }
             }
