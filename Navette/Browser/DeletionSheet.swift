@@ -24,9 +24,7 @@ struct DeletionSheet: View {
                     Spacer()
                     Button("Cancel") { model.cancelDeletion() }.buttonStyle(.soft).keyboardShortcut(.cancelAction)
                     Button("Delete Permanently") { model.confirmDeletion() }
-                        .buttonStyle(GradientButtonStyle(
-                            fill: LinearGradient(colors: [Color(hex: 0xF43F5E), Color(hex: 0xBE123C)], startPoint: .top, endPoint: .bottom),
-                            shadow: Color(hex: 0xBE123C)))
+                        .buttonStyle(GradientButtonStyle(fill: Theme.danger, shadow: Color(hex: 0xBE123C), ink: .white))
                 }
             case .deleting(let done, let total):
                 Text("Deleting…").font(.headline)
@@ -46,7 +44,7 @@ struct DeletionSummary: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top, spacing: 12) {
-                Image(systemName: "trash.fill").font(.system(size: 26)).foregroundStyle(.red)
+                GradientTile(tint: Theme.failure, symbol: "trash.fill", size: 40, glows: true)
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Delete \(tree.items.count) items from the server?").font(.headline)
                     Text("This cannot be undone: a server has no Trash.").foregroundStyle(.secondary)
@@ -56,7 +54,7 @@ struct DeletionSummary: View {
                 LazyVStack(alignment: .leading, spacing: 0) {
                     ForEach(tree.items) { item in
                         HStack(spacing: 6) {
-                            Image(nsImage: FileIcons.icon(for: item)).resizable().frame(width: 14, height: 14)
+                            FileKindIcon(item: item, size: 18)
                             Text(relative(item.path)).font(.callout).lineLimit(1).truncationMode(.middle)
                             Spacer(minLength: 8)
                             if item.kind == .file, let size = item.size {
@@ -64,7 +62,7 @@ struct DeletionSummary: View {
                             }
                         }
                         .padding(.horizontal, 10)
-                        .padding(.vertical, 3)
+                        .padding(.vertical, 4)
                     }
                 }
                 .padding(.vertical, 6)

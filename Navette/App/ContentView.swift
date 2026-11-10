@@ -9,24 +9,27 @@ struct ContentView: View {
             SidebarView(model: model)
                 .navigationSplitViewColumnWidth(min: 200, ideal: 230, max: 320)
         } detail: {
-            VStack(spacing: 0) {
-                TabBar(model: model)
-                Rectangle().fill(Theme.divider).frame(height: 1)
-                Group {
-                    if let tab = model.currentTab {
-                        BrowserView(model: tab).id(tab.id)
-                    } else {
-                        WelcomeView(model: model)
+            VStack(spacing: 10) {
+                VStack(spacing: 0) {
+                    TabBar(model: model)
+                    Group {
+                        if let tab = model.currentTab {
+                            BrowserView(model: tab).id(tab.id)
+                        } else {
+                            WelcomeView(model: model)
+                        }
                     }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .glassPanel()
                 if model.transfers.drawerVisible {
-                    Rectangle().fill(Theme.divider).frame(height: 1)
                     TransfersDrawer(model: model.transfers, reveal: model.env.reveal)
-                        .frame(height: 200)
+                        .frame(height: 220)
+                        .glassPanel(radius: 16)
                 }
             }
-            .background(Theme.ground)
+            .padding(10)
+            .background { ThemeGround() }
             .overlay(alignment: .top) { NoticeBanner(prompts: model.prompts) }
         }
         .sheet(item: $model.editor) { editor in
@@ -88,10 +91,12 @@ struct TabBar: View {
             }
             Spacer(minLength: 8)
             Button { model.transfers.drawerVisible.toggle() } label: {
-                HStack(spacing: 5) {
-                    Image(systemName: "arrow.up.arrow.down.circle")
-                    if model.transfers.activeCount > 0 {
+                HStack(spacing: 6) {
+                    if let fraction = model.transfers.activeFraction {
+                        ProgressRing(fraction: fraction, lineWidth: 3).frame(width: 16, height: 16)
                         Text(model.transfers.activeCount, format: .number).monospacedDigit()
+                    } else {
+                        Image(systemName: "arrow.up.arrow.down.circle")
                     }
                 }
             }
@@ -100,9 +105,9 @@ struct TabBar: View {
             .help("Show or Hide Transfers")
             .accessibilityLabel("Transfers")
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(Theme.barFill)
+        .padding(.horizontal, 10)
+        .padding(.top, 10)
+        .padding(.bottom, 4)
     }
 }
 
@@ -113,9 +118,10 @@ private struct TabChip: View {
     let close: () -> Void
 
     var body: some View {
-        let shape = RoundedRectangle(cornerRadius: 9, style: .continuous)
-        HStack(spacing: 7) {
-            ProtocolIcon(proto: tab.bookmark.protocol, size: 18)
+        let shape = RoundedRectangle(cornerRadius: 11, style: .continuous)
+        let tint = tab.bookmark.protocol.tint
+        HStack(spacing: 8) {
+            ProtocolIcon(proto: tab.bookmark.protocol, size: 20)
             Text(tab.bookmark.displayName).font(.system(size: 12, weight: isSelected ? .semibold : .regular)).lineLimit(1)
             if tab.phase == .connecting {
                 ProgressView().controlSize(.mini)
@@ -126,10 +132,19 @@ private struct TabChip: View {
                 .help("Close Tab")
                 .accessibilityLabel("Close Tab")
         }
-        .padding(.horizontal, 9)
-        .frame(height: 28)
+        .padding(.leading, 7)
+        .padding(.trailing, 10)
+        .frame(height: 32)
         .background(isSelected ? Theme.softFill : Color.clear, in: shape)
-        .overlay(shape.strokeBorder(isSelected ? tab.bookmark.protocol.tint.end.opacity(0.55) : Theme.softStroke))
+        .overlay {
+            if isSelected {
+                shape.strokeBorder(
+                    LinearGradient(colors: [tint.start, tint.end, Color(hex: 0xF472B6)], startPoint: .leading, endPoint: .trailing),
+                    lineWidth: 1.2)
+            } else {
+                shape.strokeBorder(Theme.softStroke)
+            }
+        }
         .contentShape(shape)
         .onTapGesture(perform: select)
     }
@@ -145,7 +160,7 @@ struct WelcomeView: View {
     var body: some View {
         VStack(spacing: 22) {
             VStack(spacing: 6) {
-                Text("Connect to a server").font(.system(size: 26, weight: .bold, design: .rounded))
+                Text("Connect to a server").font(.system(size: 28, weight: .bold)).kerning(-0.5).foregroundStyle(Theme.title)
                 Text("Paste an address, or pick a bookmark in the sidebar.").foregroundStyle(.secondary)
             }
             VStack(alignment: .leading, spacing: 8) {

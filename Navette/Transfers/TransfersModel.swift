@@ -84,6 +84,15 @@ final class TransfersModel {
     var hasFinished: Bool { snapshots.contains { $0.state.isDone } }
     var hasPaused: Bool { snapshots.contains { $0.state == .paused } }
 
+    /// How far the transfers in progress are, together. Nil when none is running or waiting.
+    var activeFraction: Double? {
+        let active = snapshots.filter { $0.state == .running || $0.state == .queued }
+        guard !active.isEmpty else { return nil }
+        let total = active.reduce(UInt64(0)) { $0 + $1.bytesTotal }
+        guard total > 0 else { return 0 }
+        return min(1, Double(active.reduce(UInt64(0)) { $0 + $1.bytesDone }) / Double(total))
+    }
+
     // MARK: - Conflicts
 
     private func ask(_ conflict: TransferConflict) async -> ConflictAnswer {
