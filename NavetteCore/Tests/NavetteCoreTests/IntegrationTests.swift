@@ -354,9 +354,13 @@ extension IntegrationTests {
                     try await writeAll(fs, base.appending(name), content)
                     break
                 } catch let error as RemoteError {
-                    guard attempts < 6, case .server(let text) = error, text.hasPrefix("TLS:") else { throw error }
-                    fs = try await session()
-                } catch RemoteError.connectionLost where attempts < 6 {
+                    let sessionAborted: Bool
+                    switch error {
+                    case .connectionLost: sessionAborted = true
+                    case .server(let text): sessionAborted = text.hasPrefix("TLS:")
+                    default: sessionAborted = false
+                    }
+                    guard attempts < 6, sessionAborted else { throw error }
                     fs = try await session()
                 }
             }
