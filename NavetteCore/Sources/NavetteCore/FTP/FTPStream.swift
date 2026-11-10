@@ -21,7 +21,6 @@ final class FTPTrust: @unchecked Sendable {
         let tls = NWProtocolTLS.Options()
         let security = tls.securityProtocolOptions
         sec_protocol_options_set_tls_server_name(security, serverName)
-        sec_protocol_options_set_tls_resumption_enabled(security, true)
         sec_protocol_options_set_verify_block(security, { [self] _, trust, complete in
             let secTrust = sec_trust_copy_ref(trust).takeRetainedValue()
             guard let problem = CertificateInspector.problem(with: secTrust) else {
