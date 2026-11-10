@@ -51,6 +51,15 @@ public struct TransferConflict: Sendable, Equatable {
     public var incomingModified: Date?
     /// The destination is shorter than the source and the protocol can append.
     public var canResume: Bool
+
+    public init(item: TransferItem, existingSize: UInt64?, existingModified: Date?, incomingSize: UInt64?, incomingModified: Date?, canResume: Bool) {
+        self.item = item
+        self.existingSize = existingSize
+        self.existingModified = existingModified
+        self.incomingSize = incomingSize
+        self.incomingModified = incomingModified
+        self.canResume = canResume
+    }
 }
 
 public struct ConflictAnswer: Sendable {

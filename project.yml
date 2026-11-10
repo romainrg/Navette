@@ -41,6 +41,13 @@ targets:
     dependencies:
       - package: NavetteCore
         product: NavetteCore
+      # The helper ssh runs to ask for passwords; it lives next to the app's executable.
+      - target: NavetteAskpass
+        embed: true
+        link: false
+        codeSign: true
+        copy:
+          destination: executables
     info:
       path: Navette/Resources/Info.plist
       properties:
@@ -51,12 +58,45 @@ targets:
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         LSApplicationCategoryType: public.app-category.developer-tools
         NSHumanReadableCopyright: "© 2026 Romain Gallien. MIT License."
+        NSLocalNetworkUsageDescription: "Navette connects to the servers you configure, including those on your local network."
     settings:
       base:
         PRODUCT_NAME: Navette
         PRODUCT_BUNDLE_IDENTIFIER: io.github.romainrg.Navette
         GENERATE_INFOPLIST_FILE: NO
         COMBINE_HIDPI_IMAGES: YES
+
+  NavetteAskpass:
+    type: tool
+    platform: macOS
+    sources:
+      - path: Tools/Askpass
+    settings:
+      base:
+        PRODUCT_NAME: navette-askpass
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.romainrg.Navette.askpass
+        SKIP_INSTALL: YES
+
+  # Development tool: renders the app views offscreen to PNG (scripts/screenshots.sh). Never distributed.
+  NavetteScreenshots:
+    type: application
+    platform: macOS
+    sources:
+      - path: Navette
+        excludes:
+          - App/NavetteApp.swift
+          - Resources/Info.plist
+      - path: Tools/Screenshots
+    dependencies:
+      - package: NavetteCore
+        product: NavetteCore
+    settings:
+      base:
+        PRODUCT_NAME: NavetteScreenshots
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.romainrg.Navette.Screenshots
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_LSUIElement: YES
+        ENABLE_HARDENED_RUNTIME: NO
 
 schemes:
   Navette:
@@ -71,3 +111,9 @@ schemes:
         - package: NavetteCore/NavetteCoreTests
     archive:
       config: Release
+  NavetteScreenshots:
+    build:
+      targets:
+        NavetteScreenshots: all
+    run:
+      config: Debug

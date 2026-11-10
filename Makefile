@@ -5,7 +5,7 @@ endif
 APP := build/Build/Products/Debug/Navette.app
 XCB := xcodebuild -project Navette.xcodeproj -scheme Navette -destination 'platform=macOS' -derivedDataPath build
 
-.PHONY: generate build test core-test integration check-strings run demo release clean
+.PHONY: generate build test core-test integration check-strings run demo release screenshots clean
 
 generate:
 	xcodegen generate
@@ -34,6 +34,9 @@ demo: build
 
 release:
 	scripts/build-release.sh
+
+screenshots:
+	scripts/screenshots.sh --readme
 
 clean:
 	rm -rf build Navette.xcodeproj Navette/Resources/Info.plist NavetteCore/.build
