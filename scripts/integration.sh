@@ -13,7 +13,8 @@ DIR="$(mktemp -d /tmp/navette-it.XXXXXX)"
 PIDS=()
 cleanup() {
   for pid in "${PIDS[@]:-}"; do [[ -n "$pid" ]] && kill "$pid" 2>/dev/null || true; done
-  rm -rf "$DIR"
+  # NAVETTE_IT_KEEP=1 keeps the temporary folder (server logs) for debugging.
+  if [[ -n "${NAVETTE_IT_KEEP:-}" ]]; then echo "integration: kept $DIR" >&2; else rm -rf "$DIR"; fi
 }
 trap cleanup EXIT
 
@@ -115,7 +116,9 @@ seccomp_sandbox=NO
 secure_chroot_dir=$dir/empty
 pasv_min_port=$((port + 1))
 pasv_max_port=$((port + 60))
-xferlog_enable=NO
+xferlog_enable=YES
+log_ftp_protocol=YES
+vsftpd_log_file=$dir/vsftpd.log
 EOF
   if [[ "$tls" == yes ]]; then
     openssl req -x509 -newkey rsa:2048 -nodes -keyout "$dir/key.pem" -out "$dir/cert.pem" -days 2 -subj "/CN=localhost" 2>/dev/null

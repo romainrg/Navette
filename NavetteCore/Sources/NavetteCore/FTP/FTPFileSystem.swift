@@ -446,10 +446,20 @@ public final class FTPFileSystem: RemoteFileSystem, @unchecked Sendable {
         func close() async throws {
             guard !isReleased else { return }
             do {
-                // In clear, the end of the upload is a half-close. Under TLS, it is the orderly close of the connection.
-                if !data.isEncrypted { try await data.finishSending() }
-                data.cancel()
-                try await fs.endTransfer(path: path)
+                // Say that nothing more is coming, wait for the server to confirm it has everything, and only then
+                // close. Closing first can reset the connection while the server is still reading, which loses the
+                // tail of the file (and, under TLS, makes some servers abort the whole session).
+                if data.isEncrypted {
+                    // Network.framework has no half-close under TLS: the orderly close of the connection
+                    // (close_notify, then FIN) is what marks the end of the file.
+                    data.cancel()
+                    try await fs.endTransfer(path: path)
+                } else {
+                    // In clear, half-close and keep the connection until the server confirms.
+                    try await data.finishSending()
+                    try await fs.endTransfer(path: path)
+                    data.cancel()
+                }
                 release()
             } catch {
                 data.cancel()

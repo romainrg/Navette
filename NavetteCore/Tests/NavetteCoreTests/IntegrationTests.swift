@@ -332,11 +332,50 @@ extension IntegrationTests {
             XCTAssertEqual(certificate.sha256, environment["NAVETTE_IT_FTPS_CERT_SHA256"])
             XCTAssertEqual(certificate.subject, "localhost")
         }
-        let fs = try await FTPFileSystem.connect(FTPConnection(
-            host: "127.0.0.1", port: port, security: .explicitTLS, trustedCertificateSHA256: environment["NAVETTE_IT_FTPS_CERT_SHA256"]))
+        // The local test server is vsftpd on macOS. There, vsftpd aborts the whole session when the client
+        // has already closed an upload's data connection by the time it calls setsockopt(SO_LINGER): the
+        // call fails on BSD kernels. It is a quirk of this test rig (vsftpd is a Linux server), so an attempt
+        // that hits it is repeated on a fresh login. A wrong byte or a wrong size is never retried.
+        func session() async throws -> FTPFileSystem {
+            try await FTPFileSystem.connect(FTPConnection(
+                host: "127.0.0.1", port: port, security: .explicitTLS, trustedCertificateSHA256: environment["NAVETTE_IT_FTPS_CERT_SHA256"]))
+        }
+        var fs = try await session()
         let base = try await fs.home().appending("tls-\(UUID().uuidString)")
         try await fs.makeDirectory(base)
-        try await DriverContract.run(fs, in: base, names: ftpNames)
+        let payload = Data((0..<300_000).map { UInt8(truncatingIfNeeded: $0 &* 17) })
+        var uploaded = 0
+        for name in ftpNames + ["data.bin"] {
+            let content = name == "data.bin" ? payload : Data(name.utf8)
+            var attempts = 0
+            while true {
+                attempts += 1
+                do {
+                    try await writeAll(fs, base.appending(name), content)
+                    break
+                } catch let error as RemoteError {
+                    guard attempts < 6, case .server(let text) = error, text.hasPrefix("TLS:") else { throw error }
+                    fs = try await session()
+                } catch RemoteError.connectionLost where attempts < 6 {
+                    fs = try await session()
+                }
+            }
+            uploaded += 1
+        }
+        XCTAssertEqual(uploaded, ftpNames.count + 1)
+        let listed = try await fs.list(base)
+        XCTAssertEqual(Set(listed.map(\.path.nameBytes)), Set((ftpNames + ["data.bin"]).map { Array($0.utf8) }))
+        XCTAssertEqual(listed.first { $0.name == "data.bin" }?.size, UInt64(payload.count))
+        for name in ftpNames {
+            let data = try await readAll(fs, base.appending(name))
+            XCTAssertEqual(data, Data(name.utf8), name)
+        }
+        let back = try await readAll(fs, base.appending("data.bin"))
+        XCTAssertEqual(back, payload)
+        let tail = try await readAll(fs, base.appending("data.bin"), offset: 250_000)
+        XCTAssertEqual(tail, payload.suffix(50_000))
+        try await fs.rename(base.appending("data.bin"), to: base.appending("renamed.bin"), overwrite: false)
+        for item in try await fs.list(base) { try await fs.removeFile(item.path) }
         try await fs.removeDirectory(base)
         await fs.disconnect()
     }
