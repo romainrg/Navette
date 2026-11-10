@@ -24,7 +24,7 @@ struct SidebarView: View {
             if !model.library.recents.isEmpty {
                 Section("Recent") {
                     ForEach(model.library.recents) { recent in
-                        BookmarkRow(bookmark: recent.bookmark)
+                        BookmarkRow(bookmark: recent.bookmark, isActive: isActive(recent.bookmark))
                             .onTapGesture(count: 2) { model.connect(recent.bookmark) }
                             .contextMenu {
                                 Button("Connect") { model.connect(recent.bookmark) }
@@ -80,6 +80,11 @@ struct SidebarView: View {
         }
     }
 
+    /// The bookmark of the tab on screen.
+    private func isActive(_ bookmark: Bookmark) -> Bool {
+        model.currentTab?.bookmark.id == bookmark.id
+    }
+
     private var folderBinding: Binding<Bool> {
         Binding(get: { model.newFolderParent != nil }, set: { if !$0 { model.newFolderParent = nil } })
     }
@@ -102,7 +107,7 @@ struct SidebarView: View {
             ForEach(nodes) { node in
                 switch node {
                 case .bookmark(let bookmark):
-                    BookmarkRow(bookmark: bookmark)
+                    BookmarkRow(bookmark: bookmark, isActive: sidebar.isActive(bookmark))
                         .onTapGesture(count: 2) { sidebar.model.connect(bookmark) }
                         .contextMenu { sidebar.bookmarkMenu(bookmark, node: node) }
                 case .folder(let folder):
@@ -152,16 +157,21 @@ struct SidebarView: View {
 
 struct BookmarkRow: View {
     let bookmark: Bookmark
+    var isActive = false
 
     var body: some View {
-        HStack(spacing: 8) {
-            ProtocolIcon(proto: bookmark.protocol, size: 20)
-            Text(bookmark.displayName).lineLimit(1)
+        let shape = RoundedRectangle(cornerRadius: 9, style: .continuous)
+        HStack(spacing: 9) {
+            ProtocolIcon(proto: bookmark.protocol, size: 22, glows: isActive)
+            Text(bookmark.displayName).fontWeight(isActive ? .semibold : .regular).lineLimit(1)
             Spacer(minLength: 4)
             if let color = bookmark.color {
                 Circle().fill(color.color).frame(width: 8, height: 8).accessibilityHidden(true)
             }
         }
+        .padding(.horizontal, 6)
+        .padding(.vertical, 3)
+        .background(isActive ? AnyShapeStyle(bookmark.protocol.tint.wash) : AnyShapeStyle(Color.clear), in: shape)
         .contentShape(Rectangle())
         .help(bookmark.urlString)
     }

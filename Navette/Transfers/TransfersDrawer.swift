@@ -8,11 +8,22 @@ struct TransfersDrawer: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 8) {
-                Text("Transfers").font(.headline)
-                if model.activeCount > 0 {
-                    Text("\(model.activeCount) in progress, \(Format.speed(model.totalSpeed))")
-                        .font(.callout).foregroundStyle(.secondary).monospacedDigit()
+            HStack(spacing: 12) {
+                ZStack {
+                    ProgressRing(fraction: model.activeFraction ?? (model.hasFinished ? 1 : 0), lineWidth: 4)
+                    if let fraction = model.activeFraction {
+                        Text(fraction, format: .percent.precision(.fractionLength(0)))
+                            .font(.system(size: 10, weight: .semibold))
+                            .monospacedDigit()
+                    }
+                }
+                .frame(width: 40, height: 40)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Transfers").font(.headline)
+                    if model.activeCount > 0 {
+                        Text("\(model.activeCount) in progress, \(Format.speed(model.totalSpeed))")
+                            .font(.callout).foregroundStyle(.secondary).monospacedDigit()
+                    }
                 }
                 Spacer()
                 if model.hasPaused {
@@ -26,8 +37,8 @@ struct TransfersDrawer: View {
             }
             .buttonStyle(.soft)
             .controlSize(.small)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
 
             if model.snapshots.isEmpty {
                 ContentUnavailableView("No transfers", systemImage: "arrow.up.arrow.down", description: Text("Drop files on a folder to upload them, or drag files to Finder to download them."))
@@ -36,13 +47,12 @@ struct TransfersDrawer: View {
                     LazyVStack(spacing: 0) {
                         ForEach(model.snapshots) { snapshot in
                             TransferRow(snapshot: snapshot, model: model, reveal: reveal)
-                            Rectangle().fill(Theme.divider).frame(height: 1).padding(.leading, 44)
+                            Rectangle().fill(Theme.divider).frame(height: 1).padding(.leading, 56)
                         }
                     }
                 }
             }
         }
-        .background(Theme.barFill)
     }
 }
 
@@ -52,26 +62,29 @@ private struct TransferRow: View {
     let reveal: @MainActor (URL) -> Void
 
     var body: some View {
-        HStack(spacing: 10) {
-            Image(systemName: snapshot.item.direction == .upload ? "arrow.up.circle.fill" : "arrow.down.circle.fill")
-                .font(.system(size: 20))
-                .foregroundStyle(tint)
+        HStack(spacing: 12) {
+            Image(systemName: symbol)
+                .font(.system(size: 12, weight: .bold))
+                .foregroundStyle(.white)
+                .frame(width: 28, height: 28)
+                .background(tint.gradient, in: Circle())
+                .shadow(color: snapshot.state == .running ? tint.end.opacity(0.45) : .clear, radius: 7, y: 3)
                 .accessibilityLabel(snapshot.item.direction == .upload ? Text("Upload") : Text("Download"))
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
                     Text(snapshot.item.name).font(.system(size: 12, weight: .semibold)).lineLimit(1).truncationMode(.middle)
                     Text(snapshot.serverName).font(.caption).foregroundStyle(.secondary).lineLimit(1)
                 }
                 if snapshot.state == .running || snapshot.state == .paused || isFailed {
-                    ProgressView(value: snapshot.fraction).progressViewStyle(.linear).tint(tint)
+                    GradientBar(fraction: snapshot.fraction, tint: tint, glows: snapshot.state == .running)
                 }
                 Text(detail).font(.caption).foregroundStyle(isFailed ? AnyShapeStyle(.red) : AnyShapeStyle(.secondary)).lineLimit(1).monospacedDigit()
             }
             Spacer(minLength: 8)
             HStack(spacing: 2) { actions }.buttonStyle(.toolbarIcon)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 6)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 7)
     }
 
     private var isFailed: Bool {
@@ -79,12 +92,20 @@ private struct TransferRow: View {
         return false
     }
 
-    private var tint: Color {
+    private var tint: Tint {
         switch snapshot.state {
-        case .finished: .green
-        case .failed: .red
-        case .paused, .queued, .skipped, .cancelled: .secondary
-        case .running: .accentColor
+        case .finished: Theme.success
+        case .failed: Theme.failure
+        case .paused, .queued, .skipped, .cancelled: Theme.idle
+        case .running: snapshot.item.direction == .upload ? Theme.upload : Theme.download
+        }
+    }
+
+    private var symbol: String {
+        switch snapshot.state {
+        case .finished: "checkmark"
+        case .failed: "exclamationmark"
+        default: snapshot.item.direction == .upload ? "arrow.up" : "arrow.down"
         }
     }
 
@@ -143,7 +164,7 @@ struct ConflictSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .top, spacing: 12) {
-                Image(systemName: "doc.on.doc.fill").font(.system(size: 26)).foregroundStyle(.orange)
+                GradientTile(tint: Theme.upload, symbol: "doc.on.doc.fill", size: 40, glows: true)
                 VStack(alignment: .leading, spacing: 4) {
                     Text("“\(conflict.item.name)” already exists").font(.title3.bold())
                     Text(conflict.item.direction == .upload ? "On the server, in “\(conflict.item.remote.parent.display)”." : "On this Mac, in “\(conflict.item.local.deletingLastPathComponent().path)”.")

@@ -2311,6 +2311,16 @@
         }
       }
     },
+    "This Mac" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ce Mac"
+          }
+        }
+      }
+    },
     "This address is not valid. Examples: sftp://user@host, ftps://host, https://cloud.example.org/dav" : {
       "localizations" : {
         "fr" : {

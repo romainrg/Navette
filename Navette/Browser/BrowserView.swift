@@ -22,13 +22,13 @@ struct BrowserView: View {
         HStack(spacing: 0) {
             VStack(spacing: 0) {
                 BrowserToolbar(model: model)
-                PathBar(model: model)
+                BrowserHeader(model: model)
                 table
                 StatusBar(model: model)
             }
             if model.inspectorVisible {
                 Rectangle().fill(Theme.divider).frame(width: 1)
-                InspectorView(model: model).frame(width: 270)
+                InspectorView(model: model).frame(width: 290)
             }
         }
         .sheet(item: $model.textPrompt) { prompt in
@@ -72,7 +72,6 @@ struct BrowserView: View {
             items: model.visibleItems, selection: model.selection, sortKey: model.sortKey, ascending: model.ascending,
             showsPermissions: model.capabilities.permissions, showsOwner: model.capabilities.ownership, model: model
         )
-        .themeCard()
         .overlay {
             if let error = model.listError {
                 ContentUnavailableView {
@@ -91,8 +90,7 @@ struct BrowserView: View {
                 }
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.bottom, 8)
+        .padding(.horizontal, 8)
     }
 
     private var deletionBinding: Binding<Bool> {
@@ -110,75 +108,113 @@ private struct BrowserToolbar: View {
     @Bindable var model: BrowserModel
 
     var body: some View {
-        HStack(spacing: 4) {
-            Button { model.goBack() } label: { Image(systemName: "chevron.left") }
-                .disabled(!model.canGoBack).help("Back").accessibilityLabel("Back")
-            Button { model.goForward() } label: { Image(systemName: "chevron.right") }
-                .disabled(!model.canGoForward).help("Forward").accessibilityLabel("Forward")
-            Button { model.goUp() } label: { Image(systemName: "arrow.up") }
-                .disabled(model.path.isRoot).help("Enclosing Folder").accessibilityLabel("Enclosing Folder")
-            Button { model.reload() } label: { Image(systemName: "arrow.clockwise") }
-                .help("Reload").accessibilityLabel("Reload")
-            Divider().frame(height: 16).padding(.horizontal, 4)
-            Button { model.textPrompt = .newFolder } label: { Image(systemName: "folder.badge.plus") }
-                .help("New Folder…").accessibilityLabel("New Folder…")
-            Button { NavetteCommands.chooseUploads(for: model) } label: { Image(systemName: "square.and.arrow.up") }
-                .help("Upload…").accessibilityLabel("Upload…")
-            Button { model.download(model.selectedItems) } label: { Image(systemName: "square.and.arrow.down") }
-                .disabled(model.selection.isEmpty).help("Download").accessibilityLabel("Download")
-            Button { model.requestDeletion() } label: { Image(systemName: "trash") }
-                .disabled(model.selection.isEmpty).help("Delete…").accessibilityLabel("Delete…")
+        HStack(spacing: 8) {
+            ToolbarGroup {
+                Button { model.goBack() } label: { Image(systemName: "chevron.left") }
+                    .disabled(!model.canGoBack).help("Back").accessibilityLabel("Back")
+                Button { model.goForward() } label: { Image(systemName: "chevron.right") }
+                    .disabled(!model.canGoForward).help("Forward").accessibilityLabel("Forward")
+                Button { model.goUp() } label: { Image(systemName: "arrow.up") }
+                    .disabled(model.path.isRoot).help("Enclosing Folder").accessibilityLabel("Enclosing Folder")
+                Button { model.reload() } label: { Image(systemName: "arrow.clockwise") }
+                    .help("Reload").accessibilityLabel("Reload")
+            }
+            ToolbarGroup {
+                Button { model.textPrompt = .newFolder } label: { Image(systemName: "folder.badge.plus") }
+                    .help("New Folder…").accessibilityLabel("New Folder…")
+                Button { model.download(model.selectedItems) } label: { Image(systemName: "square.and.arrow.down") }
+                    .disabled(model.selection.isEmpty).help("Download").accessibilityLabel("Download")
+                Button { model.requestDeletion() } label: { Image(systemName: "trash") }
+                    .disabled(model.selection.isEmpty).help("Delete…").accessibilityLabel("Delete…")
+            }
             Spacer(minLength: 12)
-            HStack(spacing: 5) {
-                Image(systemName: "line.3.horizontal.decrease").foregroundStyle(.secondary)
+            HStack(spacing: 6) {
+                Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
                 TextField("Filter", text: $model.filter).textFieldStyle(.plain).frame(width: 150)
                 if !model.filter.isEmpty {
                     Button { model.filter = "" } label: { Image(systemName: "xmark.circle.fill") }
                         .buttonStyle(.plain).foregroundStyle(.secondary).accessibilityLabel("Clear the filter")
                 }
             }
-            .padding(.horizontal, 8)
-            .frame(height: 26)
-            .background(Theme.softFill, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 7, style: .continuous).strokeBorder(Theme.softStroke))
-            Button { model.showHidden.toggle() } label: { Image(systemName: model.showHidden ? "eye" : "eye.slash") }
-                .help("Show or Hide Hidden Files").accessibilityLabel("Show or Hide Hidden Files")
-            Button { model.inspectorVisible.toggle() } label: { Image(systemName: "sidebar.right") }
-                .help("Get Info").accessibilityLabel("Get Info")
+            .padding(.horizontal, 10)
+            .frame(height: 34)
+            .background(Theme.softFill, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 11, style: .continuous).strokeBorder(Theme.softStroke))
+            ToolbarGroup {
+                Button { model.showHidden.toggle() } label: { Image(systemName: model.showHidden ? "eye" : "eye.slash") }
+                    .buttonStyle(.toolbarIcon(isOn: model.showHidden))
+                    .help("Show or Hide Hidden Files").accessibilityLabel("Show or Hide Hidden Files")
+                Button { model.inspectorVisible.toggle() } label: { Image(systemName: "sidebar.right") }
+                    .buttonStyle(.toolbarIcon(isOn: model.inspectorVisible))
+                    .help("Get Info").accessibilityLabel("Get Info")
+            }
         }
         .buttonStyle(.toolbarIcon)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
+        .padding(.horizontal, 14)
+        .padding(.top, 10)
     }
 }
 
+/// Where the tab is: the enclosing folders, the current folder as the title, and the upload button.
+private struct BrowserHeader: View {
+    let model: BrowserModel
+
+    var body: some View {
+        HStack(alignment: .bottom, spacing: 16) {
+            VStack(alignment: .leading, spacing: 6) {
+                PathBar(model: model)
+                HStack(alignment: .firstTextBaseline, spacing: 10) {
+                    Text(title)
+                        .font(.system(size: 30, weight: .bold))
+                        .kerning(-0.6)
+                        .foregroundStyle(Theme.title)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                    Text("\(model.visibleItems.count) items").font(.callout).foregroundStyle(.secondary).monospacedDigit()
+                }
+            }
+            Spacer(minLength: 12)
+            Button { NavetteCommands.chooseUploads(for: model) } label: { Label("Upload…", systemImage: "arrow.up") }
+                .buttonStyle(.gradient)
+                .help("Upload…")
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 16)
+        .padding(.bottom, 12)
+    }
+
+    private var title: String {
+        model.path.isRoot ? model.bookmark.displayName : model.path.name
+    }
+}
+
+/// The folders that enclose the current one. The current folder itself is the header's title.
 private struct PathBar: View {
     let model: BrowserModel
 
     var body: some View {
+        let ancestors = Array(model.path.ancestors.dropLast())
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 2) {
-                ForEach(Array(model.path.ancestors.enumerated()), id: \.offset) { index, ancestor in
-                    if index > 0 {
-                        Image(systemName: "chevron.right").font(.system(size: 8, weight: .bold)).foregroundStyle(.tertiary)
-                    }
+                ProtocolIcon(proto: model.bookmark.protocol, size: 16).padding(.trailing, 4)
+                if ancestors.isEmpty {
+                    Text(verbatim: model.bookmark.protocol.displayName).font(.system(size: 12)).foregroundStyle(.secondary)
+                }
+                ForEach(Array(ancestors.enumerated()), id: \.offset) { index, ancestor in
                     Button { model.navigate(to: ancestor) } label: {
-                        HStack(spacing: 4) {
-                            if index == 0 { ProtocolIcon(proto: model.bookmark.protocol, size: 16) }
-                            Text(index == 0 ? model.bookmark.displayName : ancestor.name)
-                                .font(.system(size: 12, weight: ancestor == model.path ? .semibold : .regular))
-                        }
-                        .padding(.horizontal, 5)
-                        .padding(.vertical, 3)
-                        .contentShape(Rectangle())
+                        Text(index == 0 ? model.bookmark.displayName : ancestor.name)
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 4)
+                            .padding(.vertical, 2)
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
+                    Image(systemName: "chevron.right").font(.system(size: 8, weight: .bold)).foregroundStyle(.tertiary)
                 }
             }
-            .padding(.horizontal, 14)
         }
-        .frame(height: 26)
-        .padding(.bottom, 6)
+        .frame(height: 20)
     }
 }
 
@@ -198,9 +234,8 @@ private struct StatusBar: View {
                 Label("Not encrypted", systemImage: "lock.open.fill").font(.caption).foregroundStyle(.orange)
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.bottom, 8)
-        .frame(height: 22)
+        .padding(.horizontal, 20)
+        .padding(.vertical, 8)
     }
 
     private var summary: String {

@@ -56,7 +56,7 @@ make clean
   - `App/`: `AppEnvironment` (live and demo services), `AppModel`, `Connector` (opens connections), `PromptCenter` (password, host key and certificate questions), `AppSettings`, `ContentView`, `Commands`.
   - `Browser/`: `BrowserModel` (one tab), `BrowserView`, `FileTableView` (`NSTableView`), `InspectorView`, `DeletionSheet`, `EditCoordinator` (Quick Look, Open With).
   - `Connection/`: `ConnectionSheet`, `PromptSheet`. `Sidebar/`, `Transfers/`, `Settings/`.
-  - `Shared/`: `Theme` (ground, `ProtocolTint`, `themeCard`, `.gradient`, `.soft` and `.toolbarIcon` buttons), `Formatting` (sizes, dates, `RemoteError.message`), `QuickLook`.
+  - `Shared/`: `Theme` (`ThemeGround`, `glassPanel` and `themeCard`, `Tint` for protocols, `FileKind` tiles and transfer states, `ProgressRing`, `GradientBar`, `.gradient`, `.soft` and `.toolbarIcon` buttons, `PermissionToggleStyle`), `Formatting` (sizes, dates, `RemoteError.message`), `QuickLook`.
   - `Demo/`: sample bookmarks, servers and transfers.
   - `Resources/`: `Localizable.xcstrings`, `Assets.xcassets`.
 - `Tools/Askpass/`: `navette-askpass`, the helper `ssh` runs to ask questions. It ships inside the app, next to its executable.

@@ -17,7 +17,6 @@ struct InspectorView: View {
                     .padding(.top, 60)
             }
         }
-        .background(Theme.barFill)
     }
 }
 
@@ -37,16 +36,10 @@ private struct ItemInspector: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(spacing: 10) {
-                Image(nsImage: FileIcons.icon(for: item)).resizable().frame(width: 36, height: 36)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(item.name).font(.headline).lineLimit(3).textSelection(.enabled)
-                    Text(Format.kind(of: item)).font(.callout).foregroundStyle(.secondary)
-                }
-            }
+        VStack(alignment: .leading, spacing: 16) {
+            header
 
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 8) {
                 if item.kind != .directory, let size = item.size {
                     row("Size", "\(Format.bytes(size)) (\(size.formatted()) bytes)")
                 }
@@ -56,21 +49,60 @@ private struct ItemInspector: View {
                 if let target = item.linkTarget { row("Points to", target) }
                 row("Where", item.path.parent.display)
             }
+            .padding(.horizontal, 4)
 
             if model.capabilities.permissions, item.permissions != nil, item.kind != .symlink {
-                Divider()
                 permissionEditor
+                    .padding(12)
+                    .themeCard()
             }
 
-            Divider()
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Address").font(.caption).foregroundStyle(.secondary)
-                Text(model.url(of: item)).font(.system(.caption, design: .monospaced)).textSelection(.enabled).lineLimit(4)
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Address").font(.subheadline.weight(.semibold))
+                Text(model.url(of: item))
+                    .font(.system(.caption, design: .monospaced))
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+                    .lineLimit(4)
+                    .padding(10)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .themeCard()
                 Button("Copy URL") { model.copyURL(of: item) }.buttonStyle(.soft).controlSize(.small)
+            }
+            .padding(.horizontal, 4)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// The item on a gradient card, its kind's color glowing in the corner.
+    private var header: some View {
+        let kind = FileKind(item)
+        let shape = RoundedRectangle(cornerRadius: 16, style: .continuous)
+        let tile = RoundedRectangle(cornerRadius: 13, style: .continuous)
+        return VStack(alignment: .leading, spacing: 12) {
+            Image(systemName: kind.symbol)
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(width: 42, height: 42)
+                .background(.white.opacity(0.18), in: tile)
+                .overlay(tile.strokeBorder(.white.opacity(0.35)))
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(item.name).font(.system(size: 17, weight: .bold)).foregroundStyle(.white).lineLimit(3).textSelection(.enabled)
+                Text(Format.kind(of: item)).font(.callout).foregroundStyle(.white.opacity(0.9))
             }
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .background {
+            ZStack {
+                Theme.hero
+                RadialGradient(colors: [kind.tint.start.opacity(0.55), kind.tint.start.opacity(0)], center: .topLeading, startRadius: 0, endRadius: 180)
+            }
+            .clipShape(shape)
+        }
+        .shadow(color: Color(hex: 0x4338CA).opacity(0.25), radius: 14, y: 8)
     }
 
     private func row(_ label: LocalizedStringKey, _ value: String) -> some View {
@@ -81,14 +113,18 @@ private struct ItemInspector: View {
     }
 
     private var permissionEditor: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Permissions").font(.subheadline.weight(.semibold))
-            Grid(alignment: .leading, horizontalSpacing: 10, verticalSpacing: 6) {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Permissions").font(.subheadline.weight(.semibold))
+                Spacer()
+                Text(permissions.symbolic).font(.system(.caption, design: .monospaced)).foregroundStyle(.secondary)
+            }
+            Grid(alignment: .leading, horizontalSpacing: 8, verticalSpacing: 6) {
                 GridRow {
                     Text(verbatim: "")
-                    Text("Read").font(.caption).foregroundStyle(.secondary)
-                    Text("Write").font(.caption).foregroundStyle(.secondary)
-                    Text("Execute").font(.caption).foregroundStyle(.secondary)
+                    ForEach(PermissionSet.Access.allCases, id: \.rawValue) { access in
+                        Text(title(of: access)).font(.caption).foregroundStyle(.secondary).gridColumnAlignment(.center)
+                    }
                 }
                 scopeRow("Owner", .owner)
                 scopeRow("Group", .group)
@@ -103,15 +139,23 @@ private struct ItemInspector: View {
                     .onChange(of: octal) { _, value in
                         if let parsed = PermissionSet(octal: value), parsed != permissions { permissions = parsed }
                     }
-                Text(permissions.symbolic).font(.system(.caption, design: .monospaced)).foregroundStyle(.secondary)
+                Spacer()
+                Button("Apply") { model.setPermissions(permissions, of: item, recursive: recursive) }
+                    .buttonStyle(.gradient)
+                    .controlSize(.small)
+                    .disabled(permissions.bits == (item.permissions ?? 0) && !recursive)
             }
             if item.isDirectory {
                 Toggle("Apply to enclosed items", isOn: $recursive).font(.callout)
             }
-            Button("Apply") { model.setPermissions(permissions, of: item, recursive: recursive) }
-                .buttonStyle(.gradient(model.bookmark.protocol.tint))
-                .controlSize(.small)
-                .disabled(permissions.bits == (item.permissions ?? 0) && !recursive)
+        }
+    }
+
+    private func title(of access: PermissionSet.Access) -> LocalizedStringKey {
+        switch access {
+        case .read: "Read"
+        case .write: "Write"
+        case .execute: "Execute"
         }
     }
 
@@ -119,14 +163,15 @@ private struct ItemInspector: View {
         GridRow {
             Text(label).font(.callout)
             ForEach(PermissionSet.Access.allCases, id: \.rawValue) { access in
-                Toggle(String(), isOn: Binding(
+                Toggle(isOn: Binding(
                     get: { permissions.allows(access, for: scope) },
                     set: { allowed in
                         permissions.set(access, for: scope, to: allowed)
                         octal = permissions.octal
-                    }))
-                    .labelsHidden()
-                    .toggleStyle(.checkbox)
+                    })) {
+                    Text(label) + Text(verbatim: ", ") + Text(title(of: access))
+                }
+                .toggleStyle(PermissionToggleStyle())
             }
         }
     }

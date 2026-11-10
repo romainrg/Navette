@@ -19,8 +19,8 @@ struct FileTableView: NSViewRepresentable {
     func makeNSView(context: Context) -> NSScrollView {
         let table = FileTable()
         table.style = .inset
-        table.rowHeight = 24
-        table.usesAlternatingRowBackgroundColors = true
+        table.rowHeight = 30
+        table.usesAlternatingRowBackgroundColors = false
         table.allowsMultipleSelection = true
         table.allowsColumnReordering = false
         table.columnAutoresizingStyle = .firstColumnOnlyAutoresizingStyle
@@ -120,6 +120,15 @@ struct FileTableView: NSViewRepresentable {
 
         func numberOfRows(in tableView: NSTableView) -> Int { items.count }
 
+        func tableView(_ tableView: NSTableView, rowViewForRow row: Int) -> NSTableRowView? {
+            if let reused = tableView.makeView(withIdentifier: GradientRowView.identifier, owner: nil) as? GradientRowView {
+                return reused
+            }
+            let rowView = GradientRowView()
+            rowView.identifier = GradientRowView.identifier
+            return rowView
+        }
+
         func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
             guard let tableColumn, let column = Column(rawValue: tableColumn.identifier.rawValue), items.indices.contains(row) else { return nil }
             let item = items[row]
@@ -148,7 +157,7 @@ struct FileTableView: NSViewRepresentable {
             let text = NSTextField(labelWithString: "")
             text.translatesAutoresizingMaskIntoConstraints = false
             text.lineBreakMode = column == .name ? .byTruncatingMiddle : .byTruncatingTail
-            text.font = column == .size || column == .permissions ? .monospacedDigitSystemFont(ofSize: 12, weight: .regular) : .systemFont(ofSize: 12)
+            text.font = column == .size || column == .permissions ? .monospacedDigitSystemFont(ofSize: 12, weight: .regular) : .systemFont(ofSize: column == .name ? 13 : 12)
             text.alignment = column == .size ? .right : .natural
             cell.addSubview(text)
             cell.textField = text
@@ -164,9 +173,9 @@ struct FileTableView: NSViewRepresentable {
                 constraints += [
                     image.leadingAnchor.constraint(equalTo: cell.leadingAnchor, constant: 2),
                     image.centerYAnchor.constraint(equalTo: cell.centerYAnchor),
-                    image.widthAnchor.constraint(equalToConstant: 16),
-                    image.heightAnchor.constraint(equalToConstant: 16),
-                    text.leadingAnchor.constraint(equalTo: image.trailingAnchor, constant: 6),
+                    image.widthAnchor.constraint(equalToConstant: FileIcons.size),
+                    image.heightAnchor.constraint(equalToConstant: FileIcons.size),
+                    text.leadingAnchor.constraint(equalTo: image.trailingAnchor, constant: 8),
                 ]
             } else {
                 constraints.append(text.leadingAnchor.constraint(equalTo: cell.leadingAnchor, constant: 2))
@@ -344,6 +353,26 @@ struct FileTableView: NSViewRepresentable {
 protocol FileTableKeyHandler: AnyObject {
     /// Returns true when the key was used.
     func handle(_ event: NSEvent) -> Bool
+}
+
+/// Selected rows get the theme's selection gradient instead of the flat accent color.
+final class GradientRowView: NSTableRowView {
+    static let identifier = NSUserInterfaceItemIdentifier("GradientRowView")
+
+    override func drawSelection(in dirtyRect: NSRect) {
+        let dark = effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+        let start = NSColor(Color(hex: dark ? 0x6366F1 : 0x4F46E5))
+        let end = NSColor(Color(hex: dark ? 0x14B8A6 : 0x0E7490))
+        let colors: [NSColor]
+        switch (dark, isEmphasized) {
+        case (true, true): colors = [start.withAlphaComponent(0.6), end.withAlphaComponent(0.3)]
+        case (true, false): colors = [start.withAlphaComponent(0.3), end.withAlphaComponent(0.15)]
+        case (false, true): colors = [start, end]
+        case (false, false): colors = [start.withAlphaComponent(0.16), end.withAlphaComponent(0.12)]
+        }
+        let path = NSBezierPath(roundedRect: bounds.insetBy(dx: 2, dy: 1), xRadius: 8, yRadius: 8)
+        NSGradient(colors: colors)?.draw(in: path, angle: 0)
+    }
 }
 
 final class FileTable: NSTableView {

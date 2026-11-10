@@ -29,26 +29,18 @@ struct ConnectionSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(spacing: 12) {
-                ProtocolIcon(proto: bookmark.protocol, size: 40)
+                ProtocolIcon(proto: bookmark.protocol, size: 44, glows: true)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(editor.isNew ? "New Bookmark" : "Edit Bookmark").font(.title3.bold())
+                    Text(editor.isNew ? "New Bookmark" : "Edit Bookmark").font(.system(size: 20, weight: .bold)).kerning(-0.3)
                     Text(isValid ? bookmark.urlString : String(localized: "Enter a server address")).font(.callout).foregroundStyle(.secondary).lineLimit(1)
                 }
             }
 
+            ProtocolPicker(selection: $editor.bookmark.protocol)
+
             Grid(alignment: .leadingFirstTextBaseline, horizontalSpacing: 12, verticalSpacing: 10) {
                 GridRow {
-                    Text("Protocol").gridColumnAlignment(.trailing)
-                    Picker("Protocol", selection: $editor.bookmark.protocol) {
-                        ForEach(ServerProtocol.allCases) { proto in
-                            Label(proto.displayName, systemImage: proto.symbol).tag(proto)
-                        }
-                    }
-                    .labelsHidden()
-                    .frame(maxWidth: 220, alignment: .leading)
-                }
-                GridRow {
-                    Text("Name")
+                    Text("Name").gridColumnAlignment(.trailing)
                     TextField("Optional", text: $editor.bookmark.name).textFieldStyle(.roundedBorder)
                 }
                 GridRow {
@@ -114,7 +106,7 @@ struct ConnectionSheet: View {
                 Button("Cancel") { dismiss() }.buttonStyle(.soft).keyboardShortcut(.cancelAction)
                 Button("Save") { model.commit(editor, connect: false) }.buttonStyle(.soft).disabled(!isValid)
                 Button("Connect") { model.commit(editor, connect: true) }
-                    .buttonStyle(.gradient(bookmark.protocol.tint))
+                    .buttonStyle(.gradient)
                     .keyboardShortcut(.defaultAction)
                     .disabled(!isValid)
             }
@@ -195,18 +187,63 @@ struct ConnectionSheet: View {
     }
 }
 
-/// What `ssh` will really use for this host, once `~/.ssh/config` is applied.
+/// The protocols as tiles, the selected one outlined with its gradient.
+private struct ProtocolPicker: View {
+    @Binding var selection: ServerProtocol
+
+    var body: some View {
+        HStack(spacing: 6) {
+            ForEach(ServerProtocol.allCases) { proto in
+                tile(proto)
+            }
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Protocol")
+    }
+
+    private func tile(_ proto: ServerProtocol) -> some View {
+        let isSelected = proto == selection
+        let shape = RoundedRectangle(cornerRadius: 12, style: .continuous)
+        return Button { selection = proto } label: {
+            VStack(spacing: 5) {
+                ProtocolIcon(proto: proto, size: 24, glows: isSelected)
+                Text(verbatim: proto.displayName)
+                    .font(.system(size: 10.5, weight: isSelected ? .semibold : .medium))
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.vertical, 8)
+            .padding(.horizontal, 4)
+            .frame(maxWidth: .infinity, minHeight: 66)
+            .background(isSelected ? Theme.softFill : Color.clear, in: shape)
+            .overlay {
+                if isSelected {
+                    shape.strokeBorder(proto.tint.gradient, lineWidth: 1.5)
+                } else {
+                    shape.strokeBorder(Theme.softStroke)
+                }
+            }
+            .contentShape(shape)
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+}
+
+/// What `ssh` will really use for this host, once `~/.ssh/config` is applied: the route, then the identity.
 struct ResolvedConfigView: View {
     let config: ResolvedSSHConfig
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 10) {
             Label("Resolved by your SSH configuration", systemImage: "terminal").font(.callout.weight(.semibold))
+            if let host = config.hostName {
+                route(to: host)
+            }
             Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 3) {
-                if let host = config.hostName { line("Host name", host) }
+                if config.hostName == nil, let jump = config.proxyJump { line("Jump host", jump) }
                 if let user = config.user { line("User", user) }
-                if let port = config.port { line("Port", String(port)) }
-                if let jump = config.proxyJump { line("Jump host", jump) }
                 let keys = config.existingIdentityFiles()
                 if !keys.isEmpty { line("Keys", keys.joined(separator: ", ")) }
                 if let agent = config.identityAgent { line("Agent", agent) }
@@ -215,6 +252,46 @@ struct ResolvedConfigView: View {
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .themeCard()
+    }
+
+    /// This Mac, the jump host if there is one, then the server.
+    private func route(to host: String) -> some View {
+        HStack(spacing: 0) {
+            stop(Text("This Mac"))
+            link(Color(hex: 0x2DD4BF), Color(hex: 0x818CF8))
+            if let jump = config.proxyJump {
+                stop(Text(verbatim: jump))
+                link(Color(hex: 0x818CF8), Color(hex: 0xF472B6))
+            }
+            Text(verbatim: config.port.map { "\(host):\($0)" } ?? host)
+                .font(.system(.caption, design: .monospaced).weight(.medium))
+                .foregroundStyle(.white)
+                .lineLimit(1)
+                .truncationMode(.middle)
+                .padding(.horizontal, 10)
+                .frame(height: 24)
+                .background(Theme.selection, in: Capsule())
+                .textSelection(.enabled)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    private func stop(_ text: Text) -> some View {
+        text
+            .font(.system(.caption, design: .monospaced))
+            .lineLimit(1)
+            .truncationMode(.middle)
+            .padding(.horizontal, 9)
+            .frame(height: 24)
+            .background(Theme.softFill, in: Capsule())
+            .overlay(Capsule().strokeBorder(Theme.softStroke))
+    }
+
+    private func link(_ start: Color, _ end: Color) -> some View {
+        LinearGradient(colors: [start, end], startPoint: .leading, endPoint: .trailing)
+            .frame(minWidth: 12, maxWidth: .infinity)
+            .frame(height: 2)
+            .accessibilityHidden(true)
     }
 
     private func line(_ label: LocalizedStringKey, _ value: String) -> some View {

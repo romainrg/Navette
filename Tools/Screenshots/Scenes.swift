@@ -49,16 +49,16 @@ enum ScreenshotScenes {
                     knownHostsFile: "/Users/demo/.ssh/known_hosts", knownHostsLine: 12)
                 return AnyView(sheet(ConnectionFailureView(bookmark: DemoData.production, error: .hostKeyChanged(change)) {}, AppModel(env: .demo())))
             },
-            ScreenshotScene(name: "connection-sftp", size: CGSize(width: 540, height: 640)) {
+            ScreenshotScene(name: "connection-sftp", size: CGSize(width: 540, height: 720)) {
                 let model = AppModel(env: .demo())
                 let editor = BookmarkEditor(bookmark: DemoData.staging, isNew: false)
                 return AnyView(ConnectionSheet(model: model, editor: editor, resolved: DemoData.resolvedConfig(for: DemoData.staging), test: .success))
             },
-            ScreenshotScene(name: "connection-ftp", size: CGSize(width: 540, height: 560)) {
+            ScreenshotScene(name: "connection-ftp", size: CGSize(width: 540, height: 640)) {
                 let bookmark = Bookmark(name: "Old server", protocol: .ftp, host: "ftp.example.net", user: "backup")
                 return AnyView(ConnectionSheet(model: AppModel(env: .demo()), editor: BookmarkEditor(bookmark: bookmark, isNew: true)))
             },
-            ScreenshotScene(name: "connection-webdav", size: CGSize(width: 540, height: 580)) {
+            ScreenshotScene(name: "connection-webdav", size: CGSize(width: 540, height: 660)) {
                 AnyView(ConnectionSheet(model: AppModel(env: .demo()), editor: BookmarkEditor(bookmark: DemoData.nextcloud, isNew: false)))
             },
             prompt("prompt-host-key", .hostKey(host: "staging.example.org (10.0.12.34)", keyType: "ED25519", fingerprint: "SHA256:KFrPEakk+y2tO+LkWONAIisPSUAsFuQlo4soX/FTOc4"), height: 360),
@@ -72,10 +72,10 @@ enum ScreenshotScenes {
                 let request = PromptCenter.Request(server: "Archive", prompt: .confirm(message: ""), isRetry: false, certificate: certificate)
                 return AnyView(PromptSheet(request: request) { _ in })
             },
-            ScreenshotScene(name: "conflict", size: CGSize(width: 540, height: 330)) {
+            ScreenshotScene(name: "conflict", size: CGSize(width: 540, height: 350)) {
                 AnyView(ConflictSheet(conflict: DemoData.conflict) { _ in })
             },
-            ScreenshotScene(name: "deletion", size: CGSize(width: 520, height: 470)) {
+            ScreenshotScene(name: "deletion", size: CGSize(width: 520, height: 500)) {
                 let server = DemoData.makeServer(for: DemoData.staging)
                 let home = RemotePath("/var/www/site")
                 let names = ["assets", "assets/app.css", "assets/app.js", "assets/fonts", "assets/fonts/Inter.woff2", "assets/img", "assets/img/hero.jpg", "assets/img/logo.svg", "logs", "logs/access.log", "logs/error.log", "database.sql"]
@@ -130,7 +130,7 @@ enum ScreenshotScenes {
         NavigationSplitView {
             SidebarView(model: model).navigationSplitViewColumnWidth(min: 200, ideal: 230, max: 320)
         } detail: {
-            content.frame(maxWidth: .infinity, maxHeight: .infinity).background(Theme.ground)
+            content.frame(maxWidth: .infinity, maxHeight: .infinity).glassPanel().padding(10).background { ThemeGround() }
         }
     }
 

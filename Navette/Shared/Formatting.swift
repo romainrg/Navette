@@ -50,30 +50,20 @@ enum Format {
     }
 }
 
-/// File icons from the system, cached by extension.
+/// The file list's icons: the theme's gradient tiles, rendered once per kind of file.
 @MainActor
 enum FileIcons {
-    private static var cache: [String: NSImage] = [:]
+    static let size: CGFloat = 18
+    private static var cache: [FileKind: NSImage] = [:]
 
     static func icon(for item: RemoteItem) -> NSImage {
-        let key: String
-        let type: UTType
-        switch item.kind {
-        case .directory:
-            key = "/folder"
-            type = .folder
-        case .symlink:
-            key = "/link"
-            type = .aliasFile
-        default:
-            let ext = (item.name as NSString).pathExtension.lowercased()
-            key = ext
-            type = UTType(filenameExtension: ext) ?? .data
-        }
-        if let cached = cache[key] { return cached }
-        let image = NSWorkspace.shared.icon(for: type)
-        image.size = NSSize(width: 16, height: 16)
-        cache[key] = image
+        let kind = FileKind(item)
+        if let cached = cache[kind] { return cached }
+        let renderer = ImageRenderer(content: GradientTile(tint: kind.tint, symbol: kind.symbol, size: size))
+        renderer.scale = 2
+        let image = renderer.nsImage ?? NSImage()
+        image.size = NSSize(width: size, height: size)
+        cache[kind] = image
         return image
     }
 }
