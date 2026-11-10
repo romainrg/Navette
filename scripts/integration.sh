@@ -54,7 +54,45 @@ EOF
   export NAVETTE_IT_SFTP_PORT="$port" NAVETTE_IT_SFTP_DIR="$dir"
 }
 
+start_webdav() {
+  local port="${NAVETTE_IT_WEBDAV_PORT:-28080}" dir="$DIR/webdav"
+  mkdir -p "$dir/root" "$dir/lock"
+  /usr/sbin/htpasswd -bc "$dir/htpasswd" navette "integration password" 2>/dev/null
+  cat > "$dir/httpd.conf" <<EOF
+ServerRoot /usr
+ServerName localhost
+Listen 127.0.0.1:$port
+PidFile $dir/httpd.pid
+Mutex file:$dir/lock
+ErrorLog $dir/error.log
+LoadModule mpm_prefork_module libexec/apache2/mod_mpm_prefork.so
+LoadModule unixd_module libexec/apache2/mod_unixd.so
+LoadModule authz_core_module libexec/apache2/mod_authz_core.so
+LoadModule authn_core_module libexec/apache2/mod_authn_core.so
+LoadModule authn_file_module libexec/apache2/mod_authn_file.so
+LoadModule authz_user_module libexec/apache2/mod_authz_user.so
+LoadModule auth_basic_module libexec/apache2/mod_auth_basic.so
+LoadModule dav_module libexec/apache2/mod_dav.so
+LoadModule dav_fs_module libexec/apache2/mod_dav_fs.so
+DavLockDB $dir/lock/davlock
+DocumentRoot $dir/root
+<Directory $dir/root>
+  Dav On
+  AuthType Basic
+  AuthName "Navette integration"
+  AuthUserFile $dir/htpasswd
+  Require valid-user
+</Directory>
+EOF
+  # Apache signals its whole process group when it stops: give it its own session so it cannot take this script down.
+  perl -MPOSIX -e 'POSIX::setsid(); exec @ARGV' /usr/sbin/httpd -f "$dir/httpd.conf" -DFOREGROUND > "$dir/httpd.log" 2>&1 &
+  PIDS+=("$!")
+  wait_for_port "$port"
+  export NAVETTE_IT_WEBDAV_URL="http://127.0.0.1:$port" NAVETTE_IT_WEBDAV_USER=navette NAVETTE_IT_WEBDAV_PASSWORD="integration password"
+}
+
 start_sftp
+start_webdav
 
 # The askpass helper is built with the app (make build). Its end-to-end test is skipped without it.
 HELPER="$PWD/build/Build/Products/Debug/navette-askpass"

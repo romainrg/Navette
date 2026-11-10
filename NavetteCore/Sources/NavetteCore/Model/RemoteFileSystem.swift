@@ -103,8 +103,10 @@ public protocol RemoteFileSystem: Sendable {
     /// Does not follow symlinks.
     func stat(_ path: RemotePath) async throws -> RemoteItem
     func read(_ path: RemotePath, offset: UInt64) async throws -> any RemoteReader
-    /// `offset` nil truncates or creates the file; otherwise writing starts there and the rest is kept.
+    /// `offset` nil truncates or creates the file; otherwise writing continues from there.
     func write(_ path: RemotePath, offset: UInt64?) async throws -> any RemoteWriter
+    /// Same, when the caller knows how many bytes will follow. Protocols that announce a length use it.
+    func write(_ path: RemotePath, offset: UInt64?, size: UInt64?) async throws -> any RemoteWriter
     func makeDirectory(_ path: RemotePath) async throws
     func rename(_ source: RemotePath, to destination: RemotePath, overwrite: Bool) async throws
     func removeFile(_ path: RemotePath) async throws
@@ -115,6 +117,10 @@ public protocol RemoteFileSystem: Sendable {
 }
 
 extension RemoteFileSystem {
+    public func write(_ path: RemotePath, offset: UInt64?, size: UInt64?) async throws -> any RemoteWriter {
+        try await write(path, offset: offset)
+    }
+
     /// `nil` when the path does not exist.
     public func statIfExists(_ path: RemotePath) async throws -> RemoteItem? {
         do {
