@@ -1,14 +1,32 @@
-<p align="center"><img src="docs/images/icon.png" width="128" alt="Navette icon"></p>
+<p align="center">
+  <img src="docs/images/icon.png" width="128" height="128" alt="Navette app icon">
+</p>
 
-# Navette
+<h1 align="center">Navette</h1>
 
-**A free, open-source file transfer client for macOS.** SFTP, FTP, FTPS and WebDAV in a native app that stays fast, keeps your SSH setup as it is, and never deletes or overwrites anything you have not seen.
+<p align="center">
+  <strong>A free, open-source file transfer client for macOS.</strong><br>
+  SFTP, FTP, FTPS and WebDAV in a native app that stays fast, keeps your SSH setup as it is,<br>
+  and never deletes or overwrites anything you have not seen.
+</p>
 
-*[Lire en français](README.fr.md)*
+<p align="center">
+  <a href="https://github.com/romainrg/Navette/releases/latest"><img src="https://img.shields.io/github/v/release/romainrg/Navette?sort=semver&style=for-the-badge&logo=apple&logoColor=white&label=Download&color=0A84FF" alt="Download Navette for macOS"></a><br>
+  <sub>Free and open source · macOS 14 or later · Apple silicon and Intel</sub>
+</p>
+
+<p align="center">
+  <a href="https://github.com/romainrg/Navette/actions/workflows/ci.yml"><img src="https://github.com/romainrg/Navette/actions/workflows/ci.yml/badge.svg" alt="CI status"></a>
+  <a href="https://github.com/romainrg/Navette/releases/latest"><img src="https://img.shields.io/github/v/release/romainrg/Navette?sort=semver" alt="Latest release"></a>
+  <img src="https://img.shields.io/badge/macOS-14%2B-blue" alt="Requires macOS 14 or later">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="MIT license"></a>
+</p>
+
+<p align="center"><a href="README.fr.md">Version française</a></p>
 
 Navette is written in Swift and SwiftUI, weighs about 10 MB, has no third-party dependency and sends no usage data. It is the third app of a small family, after [Mopster](https://github.com/romainrg/Mopster) and Copicol.
 
-> **Status: 0.1.0, not released yet.** The protocol drivers and the transfer engine are covered by automated tests against real local servers. The interface has only been checked through rendered screenshots so far: see [Known limitations](#known-limitations).
+> **Status: 0.1.0, a first version.** The protocol drivers and the transfer engine are covered by automated tests against real local servers. The interface has only been checked through rendered screenshots so far: see [Known limitations](#known-limitations).
 
 ![The file browser](docs/images/browser-light.png)
 
@@ -57,9 +75,17 @@ Navette does not contain an SSH implementation. It runs `/usr/bin/ssh` and lets 
 
 ## Install
 
-Navette is not released yet. Once it is, download `Navette-<version>.dmg` or `.pkg` from the [releases](https://github.com/romainrg/Navette/releases) page.
+1. Download `Navette-<version>.dmg` from the [latest release](https://github.com/romainrg/Navette/releases/latest) and open it. A `.pkg` installer is there too.
+2. Drag **Navette** onto the **Applications** folder, eject the disk image, then open Navette from `Applications`.
+3. Navette is not notarized by Apple yet, so macOS blocks the first launch. Open **System Settings › Privacy & Security**, scroll down and click **Open Anyway** next to the message about Navette. Alternatively, run:
 
-The builds are signed ad hoc and not notarized, so macOS blocks the first launch: open **System Settings > Privacy & Security** and click **Open Anyway**. For the same reason, macOS asks once for access to Navette's Keychain item after each update.
+   ```sh
+   xattr -dr com.apple.quarantine /Applications/Navette.app
+   ```
+
+Each release includes a `SHA256SUMS` file: `shasum -a 256 -c SHA256SUMS` verifies your download.
+
+Because the builds are signed ad hoc, macOS asks once for access to Navette's Keychain item after each update.
 
 Requires macOS 14 or later, on Apple Silicon or Intel.
 

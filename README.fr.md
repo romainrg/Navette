@@ -1,14 +1,32 @@
-<p align="center"><img src="docs/images/icon.png" width="128" alt="Icône de Navette"></p>
+<p align="center">
+  <img src="docs/images/icon.png" width="128" height="128" alt="Icône de l'app Navette">
+</p>
 
-# Navette
+<h1 align="center">Navette</h1>
 
-**Un client de transfert de fichiers gratuit et open source pour macOS.** SFTP, FTP, FTPS et WebDAV dans une app native qui reste rapide, respecte votre configuration SSH et ne supprime ni n'écrase jamais rien que vous n'ayez vu.
+<p align="center">
+  <strong>Un client de transfert de fichiers gratuit et open source pour macOS.</strong><br>
+  SFTP, FTP, FTPS et WebDAV dans une app native qui reste rapide, respecte votre configuration SSH<br>
+  et ne supprime ni n'écrase jamais rien que vous n'ayez vu.
+</p>
 
-*[Read in English](README.md)*
+<p align="center">
+  <a href="https://github.com/romainrg/Navette/releases/latest"><img src="https://img.shields.io/github/v/release/romainrg/Navette?sort=semver&style=for-the-badge&logo=apple&logoColor=white&label=T%C3%A9l%C3%A9charger&color=0A84FF" alt="Télécharger Navette pour macOS"></a><br>
+  <sub>Gratuit et open source · macOS 14 ou ultérieur · Apple silicon et Intel</sub>
+</p>
+
+<p align="center">
+  <a href="https://github.com/romainrg/Navette/actions/workflows/ci.yml"><img src="https://github.com/romainrg/Navette/actions/workflows/ci.yml/badge.svg" alt="État de la CI"></a>
+  <a href="https://github.com/romainrg/Navette/releases/latest"><img src="https://img.shields.io/github/v/release/romainrg/Navette?sort=semver" alt="Dernière version"></a>
+  <img src="https://img.shields.io/badge/macOS-14%2B-blue" alt="Nécessite macOS 14 ou ultérieur">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="Licence MIT"></a>
+</p>
+
+<p align="center"><a href="README.md">English version</a></p>
 
 Navette est écrite en Swift et SwiftUI, pèse environ 10 Mo, n'a aucune dépendance tierce et n'envoie aucune donnée d'utilisation. C'est la troisième app d'une petite famille, après [Mopster](https://github.com/romainrg/Mopster) et Copicol.
 
-> **État : 0.1.0, pas encore publiée.** Les pilotes de protocoles et le moteur de transfert sont couverts par des tests automatiques contre de vrais serveurs locaux. L'interface n'a été vérifiée pour l'instant que sur des captures rendues : voir les [limites connues](#limites-connues).
+> **État : 0.1.0, une première version.** Les pilotes de protocoles et le moteur de transfert sont couverts par des tests automatiques contre de vrais serveurs locaux. L'interface n'a été vérifiée pour l'instant que sur des captures rendues : voir les [limites connues](#limites-connues).
 
 ![Le navigateur de fichiers](docs/images/browser-light.png)
 
@@ -57,9 +75,17 @@ Navette ne contient pas d'implémentation de SSH. Elle lance `/usr/bin/ssh` et l
 
 ## Installation
 
-Navette n'est pas encore publiée. Quand elle le sera, téléchargez `Navette-<version>.dmg` ou `.pkg` depuis la page des [versions](https://github.com/romainrg/Navette/releases).
+1. Téléchargez `Navette-<version>.dmg` depuis la [dernière version](https://github.com/romainrg/Navette/releases/latest) et ouvrez-le. Un installeur `.pkg` s'y trouve aussi.
+2. Glissez **Navette** sur le dossier **Applications**, éjectez l'image disque, puis ouvrez Navette depuis `Applications`.
+3. Navette n'est pas encore notarisée par Apple : macOS bloque donc le premier lancement. Ouvrez **Réglages Système › Confidentialité et sécurité**, descendez et cliquez sur **Ouvrir quand même** à côté du message concernant Navette. Ou bien lancez :
 
-Les builds sont signées ad hoc et non notarisées : macOS bloque donc le premier lancement. Ouvrez **Réglages Système > Confidentialité et sécurité** et cliquez sur **Ouvrir quand même**. Pour la même raison, macOS redemande une fois l'accès à l'élément Navette du Trousseau après chaque mise à jour.
+   ```sh
+   xattr -dr com.apple.quarantine /Applications/Navette.app
+   ```
+
+Chaque version est accompagnée d'un fichier `SHA256SUMS` : `shasum -a 256 -c SHA256SUMS` vérifie votre téléchargement.
+
+Les builds étant signées ad hoc, macOS redemande une fois l'accès à l'élément Navette du Trousseau après chaque mise à jour.
 
 Nécessite macOS 14 ou plus récent, sur Apple Silicon ou Intel.
 

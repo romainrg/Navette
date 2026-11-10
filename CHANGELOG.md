@@ -4,6 +4,8 @@ All notable changes to Navette are documented here. The format follows [Keep a C
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-10
+
 First version of Navette, a file transfer client for macOS.
 
 ### Added
