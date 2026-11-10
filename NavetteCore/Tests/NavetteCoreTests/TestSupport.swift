@@ -58,20 +58,21 @@ func assertThrows<T>(_ expected: (RemoteError) -> Bool, file: StaticString = #fi
 
 /// The behavior every driver must share. Run against the in-memory driver here and against real servers by the integration tests.
 enum DriverContract {
-    static func run(_ fs: any RemoteFileSystem, in base: RemotePath, file: StaticString = #filePath, line: UInt = #line) async throws {
+    /// `names` lets a protocol leave out what it cannot carry at all (FTP is a line protocol: no line breaks).
+    static func run(_ fs: any RemoteFileSystem, in base: RemotePath, names: [String] = HostileNames.all, file: StaticString = #filePath, line: UInt = #line) async throws {
         let caps = fs.capabilities
 
         // Folders and hostile names
         let dir = base.appending("contract dir")
         try await fs.makeDirectory(dir)
         await assertThrows({ if case .alreadyExists = $0 { true } else { false } }, file: file, line: line) { try await fs.makeDirectory(dir) }
-        for name in HostileNames.all {
+        for name in names {
             try await writeAll(fs, dir.appending(name), Data(name.utf8))
         }
         let listed = try await fs.list(dir)
-        XCTAssertEqual(Set(listed.map(\.path.nameBytes)), Set(HostileNames.all.map { Array($0.utf8) }), "names must round-trip byte for byte", file: file, line: line)
+        XCTAssertEqual(Set(listed.map(\.path.nameBytes)), Set(names.map { Array($0.utf8) }), "names must round-trip byte for byte", file: file, line: line)
         XCTAssertTrue(listed.allSatisfy { $0.kind == .file }, file: file, line: line)
-        for name in HostileNames.all {
+        for name in names {
             let data = try await readAll(fs, dir.appending(name))
             XCTAssertEqual(data, Data(name.utf8), file: file, line: line)
         }

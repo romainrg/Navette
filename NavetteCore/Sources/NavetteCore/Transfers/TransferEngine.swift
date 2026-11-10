@@ -433,11 +433,12 @@ public actor TransferEngine {
             let reader = try files.reader(item.local, offset: offset ?? 0)
             defer { reader.close() }
             let writer: any RemoteWriter
+            let remaining = source.size - (offset ?? 0)
             do {
-                writer = try await fs.write(destination, offset: offset)
+                writer = try await fs.write(destination, offset: offset, size: remaining)
             } catch RemoteError.notFound {
                 try await makeDirectories(destination.parent, on: fs)
-                writer = try await fs.write(destination, offset: offset)
+                writer = try await fs.write(destination, offset: offset, size: remaining)
             }
             do {
                 while let chunk = try reader.read(upTo: chunkSize) {

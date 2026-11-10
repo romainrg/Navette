@@ -10,6 +10,31 @@ struct PromptSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
+            if let certificate = request.certificate {
+                header("exclamationmark.lock.fill", .orange, String(localized: "The certificate of “\(request.server)” is not trusted"))
+                Text("The connection is encrypted, but this Mac cannot verify who is at the other end. Trust this certificate only if you know where it comes from; Navette will then accept exactly this one for this server.")
+                    .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 6) {
+                    LabeledContent("Reason") { Text(certificate.reason).textSelection(.enabled) }
+                    LabeledContent("Issued to") { Text(certificate.subject).textSelection(.enabled) }
+                    LabeledContent("Issued by") { Text(certificate.issuer).textSelection(.enabled) }
+                    if let notAfter = certificate.notAfter { LabeledContent("Expires") { Text(Format.date(notAfter)) } }
+                    LabeledContent("SHA-256") { Text(certificate.sha256).font(.system(.caption, design: .monospaced)).textSelection(.enabled) }
+                }
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .themeCard()
+                buttons(confirm: String(localized: "Trust This Certificate"), isQuestion: true)
+            } else {
+                promptBody
+            }
+        }
+        .padding(22)
+        .frame(width: 460)
+    }
+
+    @ViewBuilder
+    private var promptBody: some View {
             switch request.prompt {
             case .hostKey(let host, let keyType, let fingerprint):
                 header("questionmark.diamond.fill", .orange, String(localized: "“\(request.server)” is a server this Mac does not know yet"))
@@ -55,9 +80,6 @@ struct PromptSheet: View {
                 Text(message)
                 buttons(confirm: String(localized: "OK"), isQuestion: true)
             }
-        }
-        .padding(22)
-        .frame(width: 460)
     }
 
     private func header(_ symbol: String, _ color: Color, _ title: String) -> some View {

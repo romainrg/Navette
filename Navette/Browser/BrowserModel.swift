@@ -164,6 +164,7 @@ final class BrowserModel: Identifiable {
             let keptSelection = target == path ? selection : []
             path = target
             items = listed
+            capabilities = fs.capabilities
             selection = keptSelection.intersection(Set(listed.map(\.path)))
             listError = nil
             canGoBack = !backStack.isEmpty

@@ -205,3 +205,156 @@ extension IntegrationTests {
         await first.disconnect()
     }
 }
+
+// MARK: - WebDAV against the system's Apache
+
+extension IntegrationTests {
+    private func webdav(password: String? = nil) throws -> WebDAVFileSystem {
+        guard let url = environment["NAVETTE_IT_WEBDAV_URL"].flatMap(URL.init(string:)) else {
+            throw XCTSkip("Run `make integration` to start the local WebDAV server.")
+        }
+        return WebDAVFileSystem(connection: WebDAVConnection(
+            baseURL: url, user: environment["NAVETTE_IT_WEBDAV_USER"], password: password ?? environment["NAVETTE_IT_WEBDAV_PASSWORD"]))
+    }
+
+    func testWebDAVDriverContract() async throws {
+        let fs = try webdav()
+        let base = RemotePath("/run-\(UUID().uuidString)")
+        try await fs.makeDirectory(base)
+        try await DriverContract.run(fs, in: base)
+        try await fs.removeDirectory(base)
+        await fs.disconnect()
+    }
+
+    func testWebDAVLargeTransferThroughTheEngine() async throws {
+        let fs = try webdav()
+        let base = RemotePath("/engine-\(UUID().uuidString)")
+        try await fs.makeDirectory(base)
+        let home = try temporaryDirectory()
+        let source = home.appendingPathComponent("large.bin")
+        var payload = Data(count: 24 << 20)
+        payload.withUnsafeMutableBytes { raw in
+            var state: UInt64 = 42
+            for index in stride(from: 0, to: raw.count, by: 8) {
+                state = state &* 6364136223846793005 &+ 1442695040888963407
+                raw.storeBytes(of: state, toByteOffset: index, as: UInt64.self)
+            }
+        }
+        try payload.write(to: source)
+
+        let engine = TransferEngine(files: DiskFiles(trash: { try FileManager.default.removeItem(at: $0) }), policy: .overwrite)
+        let up = TransferItem(direction: .upload, local: source, remote: base.appending("large.bin"))
+        let back = home.appendingPathComponent("back.bin")
+        let down = TransferItem(direction: .download, local: back, remote: base.appending("large.bin"))
+        await engine.enqueue([up], serverKey: "dav", serverName: "dav", connect: { fs })
+        await engine.waitUntilIdle()
+        await engine.enqueue([down], serverKey: "dav", serverName: "dav", connect: { fs })
+        await engine.waitUntilIdle()
+        let states = await engine.snapshots().map(\.state)
+        XCTAssertEqual(states, [.finished, .finished])
+        XCTAssertEqual(try Data(contentsOf: back), payload)
+        let listed = try await fs.list(base).map(\.name)
+        XCTAssertEqual(listed, ["large.bin"], "the partial file was renamed away")
+
+        try await fs.removeFile(base.appending("large.bin"))
+        try await fs.removeDirectory(base)
+        await fs.disconnect()
+    }
+
+    func testWebDAVWrongPasswordIsAnAuthenticationFailure() async throws {
+        let fs = try webdav(password: "wrong")
+        await assertThrows({ if case .authenticationFailed = $0 { true } else { false } }) { try await fs.list(.root) }
+        await fs.disconnect()
+    }
+}
+
+// MARK: - FTP and FTPS against vsftpd
+
+extension IntegrationTests {
+    /// FTP is a line protocol, and vsftpd replaces control characters in listings.
+    private var ftpNames: [String] { HostileNames.all.filter { !$0.contains("\n") && !$0.contains("\t") } }
+
+    private func port(_ variable: String) throws -> Int {
+        guard let port = environment[variable].flatMap(Int.init) else {
+            throw XCTSkip("Run `make integration` with vsftpd installed (and NAVETTE_IT_VSFTPD_TLS for FTPS).")
+        }
+        return port
+    }
+
+    func testFTPDriverContract() async throws {
+        let fs = try await FTPFileSystem.connect(FTPConnection(host: "127.0.0.1", port: try port("NAVETTE_IT_FTP_PORT")))
+        // The test server does not confine the session to its root: stay under the login folder.
+        let base = try await fs.home().appending("run-\(UUID().uuidString)")
+        try await fs.makeDirectory(base)
+        try await DriverContract.run(fs, in: base, names: ftpNames)
+        try await fs.removeDirectory(base)
+        await fs.disconnect()
+    }
+
+    func testFTPTransferThroughTheEngineWithResume() async throws {
+        let fs = try await FTPFileSystem.connect(FTPConnection(host: "127.0.0.1", port: try port("NAVETTE_IT_FTP_PORT")))
+        let base = try await fs.home().appending("engine-\(UUID().uuidString)")
+        try await fs.makeDirectory(base)
+        let home = try temporaryDirectory()
+        let source = home.appendingPathComponent("data.bin")
+        let payload = Data((0..<(6 << 20)).map { UInt8(truncatingIfNeeded: $0 &* 13 &+ ($0 >> 9)) })
+        try payload.write(to: source)
+
+        let engine = TransferEngine(files: DiskFiles(trash: { try FileManager.default.removeItem(at: $0) }), policy: .overwrite)
+        let back = home.appendingPathComponent("back.bin")
+        await engine.enqueue([TransferItem(direction: .upload, local: source, remote: base.appending("data.bin"))], serverKey: "ftp", serverName: "ftp", connect: { fs })
+        await engine.waitUntilIdle()
+        await engine.enqueue([TransferItem(direction: .download, local: back, remote: base.appending("data.bin"))], serverKey: "ftp", serverName: "ftp", connect: { fs })
+        await engine.waitUntilIdle()
+        let states = await engine.snapshots().map(\.state)
+        XCTAssertEqual(states, [.finished, .finished])
+        XCTAssertEqual(try Data(contentsOf: back), payload)
+
+        // REST and APPE: read a tail, then append to a prefix.
+        let tail = try await readAll(fs, base.appending("data.bin"), offset: UInt64(payload.count - 1000))
+        XCTAssertEqual(tail, payload.suffix(1000))
+        try await writeAll(fs, base.appending("part.bin"), payload.prefix(1_000_000))
+        try await writeAll(fs, base.appending("part.bin"), payload.dropFirst(1_000_000), offset: 1_000_000)
+        let joined = try await readAll(fs, base.appending("part.bin"))
+        XCTAssertEqual(joined, payload)
+
+        for item in try await fs.list(base) { try await fs.removeFile(item.path) }
+        try await fs.removeDirectory(base)
+        await fs.disconnect()
+    }
+
+    func testFTPSWithAnUntrustedCertificateIsRefusedThenAcceptedWhenTrusted() async throws {
+        let port = try port("NAVETTE_IT_FTPS_PORT")
+        do {
+            _ = try await FTPFileSystem.connect(FTPConnection(host: "127.0.0.1", port: port, security: .explicitTLS))
+            XCTFail("A self-signed certificate must not be accepted silently")
+        } catch RemoteError.untrustedCertificate(let certificate) {
+            XCTAssertEqual(certificate.sha256, environment["NAVETTE_IT_FTPS_CERT_SHA256"])
+            XCTAssertEqual(certificate.subject, "localhost")
+        }
+        let fs = try await FTPFileSystem.connect(FTPConnection(
+            host: "127.0.0.1", port: port, security: .explicitTLS, trustedCertificateSHA256: environment["NAVETTE_IT_FTPS_CERT_SHA256"]))
+        let base = try await fs.home().appending("tls-\(UUID().uuidString)")
+        try await fs.makeDirectory(base)
+        try await DriverContract.run(fs, in: base, names: ftpNames)
+        try await fs.removeDirectory(base)
+        await fs.disconnect()
+    }
+
+    func testFTPSServerThatRequiresSessionReuseGetsAClearExplanation() async throws {
+        let fs = try await FTPFileSystem.connect(FTPConnection(
+            host: "127.0.0.1", port: try port("NAVETTE_IT_FTPS_REUSE_PORT"), security: .explicitTLS,
+            trustedCertificateSHA256: environment["NAVETTE_IT_FTPS_CERT_SHA256_REUSE"] ?? environment["NAVETTE_IT_FTPS_CERT_SHA256"]))
+        let home = try await fs.home()
+        await assertThrows({ if case .unsupported(let message) = $0 { message.contains("session reuse") } else { false } }) {
+            try await fs.list(home)
+        }
+    }
+
+    func testPlainFTPServerRefusesExplicitTLSWithoutFallingBackToClear() async throws {
+        let port = try port("NAVETTE_IT_FTP_PORT")
+        await assertThrows({ if case .unsupported = $0 { true } else { false } }) {
+            try await FTPFileSystem.connect(FTPConnection(host: "127.0.0.1", port: port, security: .explicitTLS))
+        }
+    }
+}

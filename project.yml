@@ -59,6 +59,9 @@ targets:
         LSApplicationCategoryType: public.app-category.developer-tools
         NSHumanReadableCopyright: "© 2026 Romain Gallien. MIT License."
         NSLocalNetworkUsageDescription: "Navette connects to the servers you configure, including those on your local network."
+        # WebDAV servers reached over plain http (NAS, local network). The app warns that they are not encrypted.
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: true
     settings:
       base:
         PRODUCT_NAME: Navette
