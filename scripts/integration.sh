@@ -155,7 +155,7 @@ if [[ -n "${NAVETTE_IT_VSFTPD_TLS:-}" && -x "$NAVETTE_IT_VSFTPD_TLS" ]]; then
 fi
 
 # The askpass helper is built with the app (make build). Its end-to-end test is skipped without it.
-HELPER="$PWD/build/Build/Products/Debug/navette-askpass"
+HELPER="${NAVETTE_IT_ASKPASS_HELPER:-$PWD/build/Build/Products/Debug/navette-askpass}"
 if [[ -x "$HELPER" ]]; then export NAVETTE_IT_ASKPASS_HELPER="$HELPER"; fi
 
 swift test --package-path NavetteCore --filter "${1:-IntegrationTests}"

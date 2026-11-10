@@ -26,6 +26,7 @@ if [[ "${1:-}" == "--readme" ]]; then
     done
   done
   if command -v pngquant >/dev/null; then pngquant --force --skip-if-larger --ext .png docs/images/*-*.png || true; fi
+  swift scripts/make-icon.swift Navette/Resources/Assets.xcassets/AppIcon.appiconset docs/images/icon.png >/dev/null
   du -ch docs/images/*.png | tail -1
   exit 0
 fi

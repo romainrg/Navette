@@ -61,11 +61,11 @@ enum ScreenshotScenes {
             ScreenshotScene(name: "connection-webdav", size: CGSize(width: 540, height: 580)) {
                 AnyView(ConnectionSheet(model: AppModel(env: .demo()), editor: BookmarkEditor(bookmark: DemoData.nextcloud, isNew: false)))
             },
-            prompt("prompt-host-key", .hostKey(host: "staging.example.org (10.0.12.34)", keyType: "ED25519", fingerprint: "SHA256:KFrPEakk+y2tO+LkWONAIisPSUAsFuQlo4soX/FTOc4"), height: 330),
+            prompt("prompt-host-key", .hostKey(host: "staging.example.org (10.0.12.34)", keyType: "ED25519", fingerprint: "SHA256:KFrPEakk+y2tO+LkWONAIisPSUAsFuQlo4soX/FTOc4"), height: 360),
             prompt("prompt-password", .password(account: "deploy@staging.example.org"), retry: true, height: 280),
             prompt("prompt-passphrase", .passphrase(keyPath: "/Users/demo/.ssh/id_ed25519"), height: 250),
             prompt("prompt-code", .oneTimeCode(message: "(deploy@staging.example.org) Verification code:"), height: 220),
-            ScreenshotScene(name: "prompt-certificate", size: CGSize(width: 460, height: 400)) {
+            ScreenshotScene(name: "prompt-certificate", size: CGSize(width: 460, height: 440)) {
                 let certificate = CertificateSummary(
                     subject: "ftp.example.net", issuer: "ftp.example.net", notAfter: DemoData.now.addingTimeInterval(200 * 86_400),
                     sha256: "d3ffe41d953cd2f85a6287b7e466a7811cfa8c9cbf21b2035afcc2c203c545f7", reason: "The certificate is self-signed.")

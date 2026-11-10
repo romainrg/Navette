@@ -1,0 +1,69 @@
+name: Bug report
+description: Something does not work as expected.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. Please check the [existing issues](https://github.com/romainrg/Navette/issues) first.
+        **Did Navette delete, overwrite or corrupt something it should not have?** Say so in the report: that is the most important kind of bug.
+        **Never paste a password, a private key or a full server address you want to keep private.**
+        **Security problem?** Do not open a public issue: follow the [security policy](https://github.com/romainrg/Navette/security/policy).
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Describe the problem and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Connect to an SFTP server
+        2. Drag a folder from Finder to the list
+        3. ...
+    validations:
+      required: true
+  - type: dropdown
+    id: module
+    attributes:
+      label: Which part of Navette?
+      options:
+        - Connection (SFTP, SSH prompts)
+        - Connection (FTP or FTPS)
+        - Connection (WebDAV)
+        - File browser
+        - Transfers
+        - Quick Look or Open With
+        - Bookmarks or Keychain
+        - Settings
+        - Installer (DMG or PKG)
+        - Other
+  - type: input
+    id: version
+    attributes:
+      label: Navette version
+      description: Shown in Finder > Get Info on Navette.app, or the release you downloaded.
+      placeholder: 0.1.0
+    validations:
+      required: true
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version and Mac
+      description: Navette is developed on Apple Silicon with macOS 27, so reports from other setups are especially useful.
+      placeholder: macOS 15.1, MacBook Air M2 (or an Intel Mac)
+    validations:
+      required: true
+  - type: input
+    id: server
+    attributes:
+      label: Protocol and server software
+      description: For example "SFTP, OpenSSH 9.6 on Debian" or "FTPS, vsftpd". Leave out host names you want to keep private.
+  - type: textarea
+    id: extra
+    attributes:
+      label: Screenshots or output
+      description: Check for anything private (host names, user names, file names) before posting. `make demo` shows the app with sample data if you want to reproduce without personal files.

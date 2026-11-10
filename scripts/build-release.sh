@@ -28,7 +28,20 @@ if [[ "$archs" != *arm64* || "$archs" != *x86_64* ]]; then
   exit 1
 fi
 
-# Xcode drops the hardened runtime when signing ad hoc, so sign again with it.
+helper="$app/Contents/MacOS/navette-askpass"
+helper_archs=$(lipo -archs "$helper")
+if [[ "$helper_archs" != *arm64* || "$helper_archs" != *x86_64* ]]; then
+  echo "The askpass helper is not universal: $helper_archs" >&2
+  exit 1
+fi
+
+# Xcode drops the hardened runtime when signing ad hoc, so sign again with it: the helper first, then the app.
+codesign --force --options runtime --identifier io.github.romainrg.Navette.askpass --sign - "$helper"
+helper_signature=$(codesign -dv "$helper" 2>&1)
+if ! grep -Eq 'flags=0x[0-9a-f]+\([^)]*runtime' <<<"$helper_signature"; then
+  echo "Hardened runtime flag missing from the askpass helper" >&2
+  exit 1
+fi
 codesign --force --options runtime --sign - "$app"
 signature=$(codesign -dv "$app" 2>&1)
 if ! grep -Eq 'flags=0x[0-9a-f]+\([^)]*runtime' <<<"$signature"; then

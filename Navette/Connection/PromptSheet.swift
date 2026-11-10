@@ -19,7 +19,15 @@ struct PromptSheet: View {
                     LabeledContent("Issued to") { Text(certificate.subject).textSelection(.enabled) }
                     LabeledContent("Issued by") { Text(certificate.issuer).textSelection(.enabled) }
                     if let notAfter = certificate.notAfter { LabeledContent("Expires") { Text(Format.date(notAfter)) } }
-                    LabeledContent("SHA-256") { Text(certificate.sha256).font(.system(.caption, design: .monospaced)).textSelection(.enabled) }
+                    // A fingerprint is only useful when it can be read in full.
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("SHA-256")
+                        Text(Self.grouped(certificate.sha256))
+                            .font(.system(.caption, design: .monospaced))
+                            .textSelection(.enabled)
+                            .lineLimit(nil)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
                 .padding(12)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -43,7 +51,14 @@ struct PromptSheet: View {
                 VStack(alignment: .leading, spacing: 6) {
                     LabeledContent("Server") { Text(host).textSelection(.enabled) }
                     LabeledContent("Key type") { Text(keyType) }
-                    LabeledContent("Fingerprint") { Text(fingerprint).font(.system(.callout, design: .monospaced)).textSelection(.enabled) }
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Fingerprint")
+                        Text(fingerprint)
+                            .font(.system(.callout, design: .monospaced))
+                            .textSelection(.enabled)
+                            .lineLimit(nil)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
                 .padding(12)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -80,6 +95,14 @@ struct PromptSheet: View {
                 Text(message)
                 buttons(confirm: String(localized: "OK"), isQuestion: true)
             }
+    }
+
+    /// Hexadecimal in groups of eight, so it wraps between groups and never gets a hyphen from the text layout.
+    static func grouped(_ hex: String) -> String {
+        stride(from: 0, to: hex.count, by: 8).map { offset -> String in
+            let start = hex.index(hex.startIndex, offsetBy: offset)
+            return String(hex[start..<(hex.index(start, offsetBy: 8, limitedBy: hex.endIndex) ?? hex.endIndex)])
+        }.joined(separator: " ")
     }
 
     private func header(_ symbol: String, _ color: Color, _ title: String) -> some View {
