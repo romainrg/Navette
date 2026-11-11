@@ -4,6 +4,12 @@ All notable changes to Navette are documented here. The format follows [Keep a C
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-11-11
+
+### Changed
+
+- **Interface**: translucent panels over a soft color ground, light and dark; a gradient tile for each protocol and each kind of file; a gradient selection in the file list; the current folder as a large title; a progress ring and gradient bars for transfers; protocol tiles and the SSH route (this Mac, jump host, server) in the connection sheet.
+
 ## [0.1.0] - 2026-11-10
 
 First version of Navette, a file transfer client for macOS.
@@ -23,7 +29,6 @@ First version of Navette, a file transfer client for macOS.
 - **Remote deletion** always preceded by the list of items, their count and total size.
 - **Certificate sheet** for TLS certificates the system does not trust, and an explanation instead of a connection when an SSH host key changed.
 - **Demo mode** (`--demo`) with in-memory servers: no network and no disk access.
-- **Interface**: translucent panels over a soft color ground, light and dark; a gradient tile for each protocol and each kind of file; a gradient selection in the file list; the current folder as a large title; a progress ring and gradient bars for transfers; protocol tiles and the SSH route (this Mac, jump host, server) in the connection sheet.
 - English and French.
 
 ### Known limitations
