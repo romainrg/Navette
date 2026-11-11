@@ -26,7 +26,7 @@
 
 Navette est écrite en Swift et SwiftUI, pèse environ 10 Mo, n'a aucune dépendance tierce et n'envoie aucune donnée d'utilisation. C'est la troisième app d'une petite famille, après [Mopster](https://github.com/romainrg/Mopster) et Copicol.
 
-> **État : 0.1.0, une première version.** Les pilotes de protocoles et le moteur de transfert sont couverts par des tests automatiques contre de vrais serveurs locaux. L'interface n'a été vérifiée pour l'instant que sur des captures rendues : voir les [limites connues](#limites-connues).
+> **État : 0.1, une première version.** Les pilotes de protocoles et le moteur de transfert sont couverts par des tests automatiques contre de vrais serveurs locaux. L'interface n'a été vérifiée pour l'instant que sur des captures rendues : voir les [limites connues](#limites-connues).
 
 ![Le navigateur de fichiers](docs/images/browser-light.png)
 
